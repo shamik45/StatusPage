@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+
+    <title>Cover Template for Bootstrap</title>
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+      <script src="../js/libs/moment.js"></script>
+    <!-- Custom styles for this template -->
+    <link href="cover.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+
+    <div class="site-wrapper">
+
+      <div class="site-wrapper-inner">
+
+        <div class="cover-container">
+
+          <div class="masthead clearfix">
+            <div class="inner">
+
+
+                <h2><div id="clock1">loading ...</div></h2>
+                <h3><div id="clock2">loading ...</div></h3>
+                <h4><div id="clock3">loading ...</div></h4>
+
+
+            </div>
+          </div>
+
+          <div class="inner cover">
+              <div id="news">
+              </div>
+          </div>
+
+          <div class="mastfoot">
+            <div id="weather">
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!-- Latest compiled and minified CSS -->
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <script
+            src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script>
+    function update1() {
+        $('#clock1').html(moment().format('HH:mm:ss'));
+    }
+
+    function update2() {
+        $('#clock2').html(moment().format('ddd'));
+    }
+
+    function update3() {
+        $('#clock3').html(moment().format('D MMMM'));
+    }
+
+    setInterval(update1, 1000);
+    setInterval(update2, 1000);
+    setInterval(update3, 1000);
+    setInterval(loadNews,10000);
+    setInterval(loadWeather,10000);
+
+    $('body').css({background : 'url(test/images/background.jpg)  no-repeat center center '});
+    $('body').css({'background-size' : '100%'});
+
+    function loadNews() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("news").innerHTML = this.responseText;
+            }
+        };
+        xhttp.open("GET", "http://localhost:8090/news", true);
+        xhttp.send();
+    }
+
+
+    function loadWeather() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("weather").innerHTML = this.responseText;
+            }
+        };
+        xhttp.open("GET", "http://localhost:8090/weather", true);
+        xhttp.send();
+    }
+
+
+</script>
+
+  </body>
+</html>

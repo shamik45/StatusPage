@@ -1,0 +1,33 @@
+<project name="MyProject" default="deployLocal" basedir=".">
+    <description>
+        simple example build file
+    </description>
+    <!-- set global properties for this build -->
+    <property name="src" location="src"/>
+    <property name="build" location="build"/>
+    <property name="dist" location="dist"/>
+
+
+    <target name="deployLocal" description="compile the source">
+        <!-- copy all the file to the webroot -->
+        <copy todir="/Library/WebServer/Documents/statusPage/">
+            <fileset dir="/Users/shamik.shah/personalGit/StatusPage/frontEnd/">
+                <exclude name="**/node_modules/*" />
+            </fileset>
+        </copy>
+    </target>
+
+
+    <!--
+    <target name="deployProd"
+            description="deploy to ftp">
+        <ftp server="ftp.cs.theplatform.com"
+             remotedir="skyTracer"
+             userid="shamikshah"
+             password="upl0ad!"
+             verbose="true">
+            <fileset dir="/Users/shamik.shah/Perforce/perforceWorkspace/depot/user/shamik.shah/skyTracer/app"/>
+        </ftp>
+    </target>
+     -->
+</project>
