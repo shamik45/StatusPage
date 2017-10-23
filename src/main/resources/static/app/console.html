@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Console Page</title>
+    <meta charset="UTF-8">
+
+    <script src="//code.angularjs.org/snapshot/angular.min.js"></script>
+
+
+</head>
+
+<body ng-app="statusConsoleApp" >
+<script>
+    console.log("hello");
+    angular.module('statusConsoleApp',[]).controller('StatusConsoleController', ['$scope','$http',
+        function($scope, $http){
+
+            console.log("function ran");
+
+            var self = this;
+
+            $http.get("/user").then(function(response){
+
+                console.log("response is");
+                console.log(response.data);
+                console.log(response.data.userAuthentication.details.given_name);
+                console.log(response.data.authenticated);
+
+                if(response.data)
+                {
+                    $scope.user = response.data.userAuthentication.details.given_name;
+                    $scope.authenticated = response.data.authenticated;
+                    console.log("in true block");
+                } else {
+                    $scope.authenticated = false;
+                    console.log("in false block");
+                }
+            })
+
+            $scope.logout = function(){
+               $http.post("/logout", {}).then(function(response){
+                   $scope.authenticated = false;
+                   $location.path("/app/console.html");
+               })
+            }
+
+        }]);
+
+</script>
+
+
+<div ng-controller="StatusConsoleController"   >
+
+    <div class="container" ng-show="!authenticated" >
+        Login with: <a href="/login">Google</a>
+        Logged in as: <span ng-bind="user"></span>
+        authentication status is : {{authenticated}}
+    </div>
+    <div class="container" ng-show="authenticated">
+        Logged in as: <span ng-bind="user"></span>
+        <div>
+            <button ng-click="logout()" class="btn btn-primary">Logout</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

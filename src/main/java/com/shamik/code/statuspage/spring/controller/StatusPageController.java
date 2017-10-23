@@ -1,5 +1,6 @@
 package com.shamik.code.statuspage.spring.controller;
 
+import org.json.simple.JSONObject;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,12 +11,9 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.security.Principal;
 import java.util.Random;
+
 
 @RestController
 public class StatusPageController {
@@ -51,6 +49,8 @@ public class StatusPageController {
 
             Node nNode = nList.item(0);
 
+            JSONObject obj = new JSONObject();
+
             if (nNode.getNodeType() == Node.ELEMENT_NODE){
                 Element e = (Element) nNode;
 
@@ -62,9 +62,15 @@ public class StatusPageController {
 
                 String lastUpdated = e.getElementsByTagName("observation_time").item(0).getTextContent();
 
+                obj.put("title", title);
+                obj.put("desc", desc);
+                obj.put("iconUrl", iconUrl);
+                obj.put("windData", windData);
+                obj.put("lastUpdated", lastUpdated);
 
 
-                returnData = "<h3>" + title + "</h3><p>" + desc + "</p><p>" + windData + "</p><p>" + lastUpdated + "</p><a><img src='" + iconUrl + "'></a>";
+
+                returnData = obj.toJSONString();
 
             }
 
@@ -101,6 +107,8 @@ public class StatusPageController {
 
             Node nNode = nList.item(randomTitleElement);
 
+            JSONObject obj = new JSONObject();
+
             if (nNode.getNodeType() == Node.ELEMENT_NODE){
                 Element e = (Element) nNode;
 
@@ -108,7 +116,10 @@ public class StatusPageController {
                 String title = e.getElementsByTagName("title").item(0).getTextContent();
                 String desc = e.getElementsByTagName("description").item(0).getTextContent();
 
-                returnTitle = "<h3>" + title + "</h3><p>" + desc + "</p>";
+                obj.put("headline", title);
+                obj.put("description", desc);
+
+                returnTitle = obj.toJSONString();
 
             }
 
@@ -119,5 +130,20 @@ public class StatusPageController {
 
         return returnTitle;
     }
+
+    @CrossOrigin
+    @RequestMapping("/calendar")
+    public String getCalendar(){
+
+
+        return null;
+    }
+
+    @CrossOrigin
+    @RequestMapping("/user")
+    public Principal user(Principal principal) {
+        return principal;
+    }
+
 
 }

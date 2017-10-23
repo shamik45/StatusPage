@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+
+    <title>Status Page</title>
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+      <script src="/app/libs/moment.js"></script>
+    <!-- Custom styles for this template -->
+    <link href="cover.css" rel="stylesheet">
+
+      <meta charset="UTF-8">
+
+      <script src="//code.angularjs.org/snapshot/angular.min.js"></script>
+
+
+  </head>
+
+  <body ng-app="statusPageApp" >
+  <script>
+
+      angular.module('statusPageApp',[]).controller('StatusController', ['$scope','$http','$interval',
+      function($scope, $http, $interval){
+
+          console.log("hello");
+
+          $scope.bkImageUrl = "http://localhost/statusPage/html/test/images/background.jpg";
+
+
+          $scope.hello = "hello";
+
+          getNews();
+          getWeather();
+          getTime();
+
+          //$interval(getNews,1000);
+          //$interval(getWeather, 1000);
+          $interval(getTime,1000);
+
+          function getNews(){
+              $http.get('http://localhost:8090/news').then(function(response){
+                  $scope.news = response.data;
+              }, function(response){
+                  console.log(response.data)
+                  $scope.news="something went wrong";
+              })
+          }
+
+          function getWeather(){
+              $http.get('http://localhost:8090/weather').then(function(response){
+                  $scope.weather = response.data;
+              }, function(response){
+                  console.log(response.data)
+                  $scope.weather="something went wrong";
+              })
+          }
+
+          function getTime(){
+              $scope.date = Date.now();
+              //console.log('got time');
+          }
+
+      }]);
+
+
+      $scope.bkImageUrl = "http://localhost/statusPage/html/test/images/background.jpg";
+
+  </script>
+
+
+  <div class="site-wrapper" ng-controller="StatusController" ng-style="{'background-image':'url({{bkImageUrl}}'}">
+
+      <div class="site-wrapper-inner"  >
+
+        <div class="cover-container">
+
+          <div class="masthead clearfix">
+            <div class="inner">
+
+                <div class="masthead-brand">
+                 <h3>{{date| date:'EEE HH:mm:ss'}}</h3>
+                    <h4>{{date| date:'yyyy-MMM-d'}}</h4>
+
+                </div>
+
+            </div>
+          </div>
+
+          <div class="inner cover">
+              <div id="news">
+                  <h1>{{news.headline}}</h1>
+                  <p class="lead">{{news.description}}</p>
+              </div>
+          </div>
+
+          <div class="mastfoot">
+            <div id="weather" align="left">
+                <table>
+                    <tr>
+                        <td rowspan="4">
+                            <img src="{{weather.iconUrl}}" height="150" width="150">
+                        </td>
+                        <td>
+                            <h1>{{weather.title}}</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p>{{weather.desc}}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                           <p>{{weather.windData}}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            {{weather.lastUpdated}}
+                        </td>
+                    </tr>
+
+                </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!-- Latest compiled and minified CSS -->
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <script
+            src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+    <!-- Bootstrap core JavaScript
+      ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+
+  </body>
+</html>
