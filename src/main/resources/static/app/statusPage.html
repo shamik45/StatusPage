@@ -28,16 +28,13 @@
       angular.module('statusPageApp',[]).controller('StatusController', ['$scope','$http','$interval',
       function($scope, $http, $interval){
 
-          console.log("hello");
-
           $scope.bkImageUrl = "http://localhost/statusPage/html/test/images/background.jpg";
-
-
-          $scope.hello = "hello";
 
           getNews();
           getWeather();
           getTime();
+          getCalendarEvents();
+
 
           //$interval(getNews,1000);
           //$interval(getWeather, 1000);
@@ -66,10 +63,58 @@
               //console.log('got time');
           }
 
+          function getBearerToken(){
+              var token = "";
+              $http.get('/user').then(function(response){
+                  token = response.data.details.tokenValue;
+                  console.log("token is " + token);
+              }, function(response){
+                  console.log(response.data)
+                  $scope.news="something went wrong";
+              })
+
+              return token;
+          }
+
+          function getCalendarEvents(){
+
+
+              $http.get('/user').then(function(response){
+                  token = response.data.details.tokenValue;
+                  console.log("token is " + token);
+
+
+                  var headerValue = "Bearer " + token;
+
+                  console.log("headerValue is" + headerValue);
+                  var config = {headers:  {
+                      'Authorization': headerValue
+                  }
+                  };
+                  $http.get('https://www.googleapis.com/calendar/v3/calendars/shamik.nfc@gmail.com/events', config).then(
+                          function(response){
+                              console.log("the calendar data is ");
+                              console.log(response.data);
+                              $scope.calendarItems = response.data;
+                          }
+                          , function(response){
+
+
+                          })
+
+
+
+              }, function(response){
+                  console.log(response.data)
+                  $scope.news="something went wrong";
+              })
+
+
+          }
+
       }]);
 
 
-      $scope.bkImageUrl = "http://localhost/statusPage/html/test/images/background.jpg";
 
   </script>
 
@@ -80,8 +125,12 @@
 
         <div class="cover-container">
 
+
+
           <div class="masthead clearfix">
-            <div class="inner">
+
+
+              <div class="inner">
 
                 <div class="masthead-brand">
                  <h3>{{date| date:'EEE HH:mm:ss'}}</h3>
@@ -89,7 +138,18 @@
 
                 </div>
 
-            </div>
+                  <div class="nav-masthead">
+                      <table>
+                          <tr>
+                              <td ng-repeat="item in calendarItems.items">
+                                  <h1>{{item.summary}}</h1>
+                              </td>
+                          </tr>
+                      </table>
+                  </div>
+
+
+              </div>
           </div>
 
           <div class="inner cover">
@@ -158,6 +218,7 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
     <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+
 
   </body>
 </html>
