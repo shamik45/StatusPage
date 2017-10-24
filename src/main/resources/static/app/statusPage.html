@@ -22,23 +22,37 @@
 
   </head>
 
-  <body ng-app="statusPageApp" >
+  <body ng-app="statusPageApp" ng-controller="StatusController" ng-style="{'background-image':'url(' + bkImageUrl+ ')'}">
   <script>
 
       angular.module('statusPageApp',[]).controller('StatusController', ['$scope','$http','$interval',
       function($scope, $http, $interval){
 
           $scope.bkImageUrl = "http://localhost/statusPage/html/test/images/background.jpg";
-
+          //$scope.bkImageUrl = "https://lh3.googleusercontent.com/-BRbfOdJEQug/We-T933VSMI/AAAAAAAAADg/ijw5EyeLMdASxNWo3U4abrejFNL2IyceACHMYBhgL/file9241312063946.jpg";
+          //getPhotos();
           getNews();
           getWeather();
           getTime();
           getCalendarEvents();
 
 
+
+          $interval(getPhotos,10000);
           //$interval(getNews,1000);
           //$interval(getWeather, 1000);
           $interval(getTime,1000);
+
+
+          function getPhotos(){
+
+              $http.get('/photos').then(function(response){
+                  var url = response.data.photoUrl;
+                  //console.log(url);
+                  $scope.bkImageUrl =  url;
+                  //console.log($scope.bkImageUrl)
+              });
+          }
 
           function getNews(){
               $http.get('http://localhost:8090/news').then(function(response){
@@ -119,7 +133,7 @@
   </script>
 
 
-  <div class="site-wrapper" ng-controller="StatusController" ng-style="{'background-image':'url({{bkImageUrl}}'}">
+  <div class="site-wrapper" >
 
       <div class="site-wrapper-inner"  >
 
@@ -139,10 +153,10 @@
                 </div>
 
                   <div class="nav-masthead">
-                      <table>
+                      <table class="table table-hover">
                           <tr>
                               <td ng-repeat="item in calendarItems.items">
-                                  <h1>{{item.summary}}</h1>
+                                  <h3>{{item.summary}}</h3>
                               </td>
                           </tr>
                       </table>
