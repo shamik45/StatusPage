@@ -1,6 +1,13 @@
 package com.shamik.code.statuspage.spring.controller;
 
+import com.shamik.code.statuspage.spring.controller.objects.CalendarEntry;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.mortbay.util.ajax.JSON;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
@@ -20,7 +27,7 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.Principal;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.slf4j.Logger;
@@ -33,6 +40,17 @@ public class StatusPageController {
 
     private static final Logger logger = LoggerFactory.getLogger(StatusPageController.class);
 
+    @Value("${weather.poll.url}")
+    private String weatherPollUrl;
+
+    @Value("${news.feed.url.list}")
+    private String[] listOfFeedUrls;
+
+    @Value("${calendar.url}")
+    private String calendarUrl;
+
+    @Value("${photos.url}")
+    private String photosUrl;
 
     @CrossOrigin
     @RequestMapping("/")
@@ -49,6 +67,116 @@ public class StatusPageController {
     }
 
     @CrossOrigin
+    @RequestMapping("/calendar")
+    public String getCalendar(){
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
+
+        JSONArray resultJson = new JSONArray();
+
+        Hashtable resultMap = new Hashtable<String, List<CalendarEntry>>();
+
+        JSONObject returnJson = new JSONObject();
+        JSONArray listOfDays = new JSONArray();
+
+
+        try{
+            String calendarResponse = sendGet(calendarUrl,
+                    currentPrincipalToken.getTokenValue());
+
+            //logger.debug("the calendar response is " + calendarResponse);
+
+            JSONParser parser = new JSONParser();
+
+            JSONObject jsonObj = (JSONObject) parser.parse(calendarResponse);
+
+            JSONArray items = (JSONArray) jsonObj.get("items");
+
+            Iterator<JSONObject> itemIterator = items.iterator();
+
+
+
+
+            while(itemIterator.hasNext()){
+
+                JSONObject resultJsonItem = new JSONObject();
+
+                CalendarEntry ce = new CalendarEntry();
+
+
+                JSONObject itemObject = (JSONObject) itemIterator.next();
+                JSONObject startDateTime = (JSONObject)itemObject.get("start");
+                String startDate = ((String) startDateTime.get("dateTime")).split("T")[0].split("-")[2];
+                //String startTime =  ((String) startDateTime.get("dateTime")).split("T")[1].split("-")[0];
+                //String summary = (String) itemObject.get("summary");
+                //String status = (String) itemObject.get("status");
+
+                ce.setStatus((String) itemObject.get("status"));
+                ce.setSummary((String) itemObject.get("summary"));
+                ce.setStartTime(((String) startDateTime.get("dateTime")).split("T")[1].split("-")[0]);
+
+                logger.debug("start dates are" + startDate);
+
+
+                //resultJsonItem.put("day", startDate);
+                //resultJsonItem.put("summary", summary);
+                //resultJsonItem.put("status", status);
+
+                //resultJson.add(resultJsonItem);
+
+                //resultMap.put(startDate,summary);
+
+                List<CalendarEntry> list = (List<CalendarEntry>)resultMap.get(startDate);
+                if(list == null){
+                    list = new ArrayList<CalendarEntry>();
+                    resultMap.put(startDate,list);
+                }
+                list.add(ce);
+            }
+
+            //create the JSON feed
+            //Iterator<String> it = resultMap.entrySet().iterator();
+
+            Set<String> keys = resultMap.keySet();
+
+            for(String key: keys){
+                //String key = (String) it.next();
+                List<CalendarEntry> listCe = (List<CalendarEntry>)resultMap.get(key);
+
+                JSONObject toplevel = new JSONObject();
+                toplevel.put("day", key);
+                JSONArray listOfEntries = new JSONArray();
+
+                Iterator listIter = listCe.iterator();
+                while(listIter.hasNext()){
+                    CalendarEntry ce = (CalendarEntry)listIter.next();
+                    JSONObject entryObject = new JSONObject();
+                    entryObject.put("status", ce.getStatus());
+                    entryObject.put("startTime", ce.getStartTime());
+                    entryObject.put("endTime", ce.getEndTime());
+                    entryObject.put("summary", ce.getSummary());
+
+                    listOfEntries.add(entryObject);
+                }
+                toplevel.put("events", listOfEntries);
+                listOfDays.add(toplevel);
+            }
+
+            //logger.debug("result map is " + resultMap.toString());
+
+
+        } catch (Exception e){
+            logger.debug("Error in obtaining calendar feed ");
+            e.printStackTrace();
+        }
+
+        returnJson.put("dayEntries", listOfDays);
+        return returnJson.toJSONString();
+    }
+
+
+    @CrossOrigin
     @RequestMapping("/weather")
     public String weatherItem(){
 
@@ -58,7 +186,8 @@ public class StatusPageController {
         {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse("http://w1.weather.gov/xml/current_obs/KPAE.xml");
+            //Document doc = dBuilder.parse("http://w1.weather.gov/xml/current_obs/KPAE.xml");
+            Document doc = dBuilder.parse(weatherPollUrl);
 
             doc.getDocumentElement().normalize();
 
@@ -108,11 +237,20 @@ public class StatusPageController {
 
         String returnTitle = "";
 
+        //logger.debug("news url is " + listOfFeedUrls[0]);
+        //logger.debug("news url is " + listOfFeedUrls[1]);
+
+        logger.debug("length of array " + listOfFeedUrls.length);
+
         try
         {
+            //choose a feed at random
+            int randomNum = ThreadLocalRandom.current().nextInt(0, listOfFeedUrls.length);
+
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse("http://feeds.feedburner.com/ndtvnews-top-stories");
+
+            Document doc = dBuilder.parse(listOfFeedUrls[randomNum]);
 
             doc.getDocumentElement().normalize();
 
@@ -137,6 +275,7 @@ public class StatusPageController {
 
                 obj.put("headline", title);
                 obj.put("description", desc);
+                obj.put("feedData", listOfFeedUrls[randomNum]);
 
                 returnTitle = obj.toJSONString();
 
@@ -151,13 +290,7 @@ public class StatusPageController {
         return returnTitle;
     }
 
-    @CrossOrigin
-    @RequestMapping("/calendar")
-    public String getCalendar(){
 
-
-        return null;
-    }
 
     @CrossOrigin
     @RequestMapping("/user")
@@ -174,7 +307,7 @@ public class StatusPageController {
         OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
 
 
-        logger.debug("current principal name is " + currentPrincipalToken.getTokenValue());
+        //logger.debug("current principal name is " + currentPrincipalToken.getTokenValue());
 
         String listOfPhotosXml =  "";
 
@@ -182,9 +315,7 @@ public class StatusPageController {
 
 
         try{
-            listOfPhotosXml = sendGet("https://picasaweb.google.com/data/feed/api/user/default/albumid/6480500567927330529?imgmax=1600u", currentPrincipalToken.getTokenValue());
-
-            logger.debug("the photo xml is " + listOfPhotosXml);
+            listOfPhotosXml = sendGet(photosUrl, currentPrincipalToken.getTokenValue());
 
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -195,7 +326,7 @@ public class StatusPageController {
 
             NodeList nList = doc.getElementsByTagName("entry");
 
-            logger.debug("num of entries is " + nList.getLength());
+            //logger.debug("num of entries is " + nList.getLength());
 
             //for (int temp = 0; temp < nList.getLength(); temp++) {
 
@@ -209,9 +340,9 @@ public class StatusPageController {
 
                     Element eElement = (Element) nNode;
 
-                    logger.debug("Photo title : " + eElement.getElementsByTagName("title").item(0).getTextContent());
+                    //logger.debug("Photo title : " + eElement.getElementsByTagName("title").item(0).getTextContent());
                     Element contentElement = (Element)eElement.getElementsByTagName("content").item(0);
-                    logger.debug("URL:" + contentElement.getAttribute("src"));
+                    //logger.debug("URL:" + contentElement.getAttribute("src"));
                     returnUrl = contentElement.getAttribute("src");
                 }
 

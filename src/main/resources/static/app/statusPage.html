@@ -12,6 +12,10 @@
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
       <script src="/app/libs/moment.js"></script>
+
+
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
     <!-- Custom styles for this template -->
     <link href="cover.css" rel="stylesheet">
 
@@ -28,19 +32,20 @@
       angular.module('statusPageApp',[]).controller('StatusController', ['$scope','$http','$interval',
       function($scope, $http, $interval){
 
-          $scope.bkImageUrl = "http://localhost/statusPage/html/test/images/background.jpg";
+          //$scope.bkImageUrl = "http://localhost/statusPage/html/test/images/background.jpg";
           //$scope.bkImageUrl = "https://lh3.googleusercontent.com/-BRbfOdJEQug/We-T933VSMI/AAAAAAAAADg/ijw5EyeLMdASxNWo3U4abrejFNL2IyceACHMYBhgL/file9241312063946.jpg";
           //getPhotos();
           getNews();
           getWeather();
           getTime();
           getCalendarEvents();
+          getPhotos();
 
 
 
-          $interval(getPhotos,10000);
-          //$interval(getNews,1000);
-          //$interval(getWeather, 1000);
+          $interval(getPhotos,100000);
+          $interval(getNews,100000);
+          $interval(getWeather, 100000);
           $interval(getTime,1000);
 
 
@@ -55,7 +60,7 @@
           }
 
           function getNews(){
-              $http.get('http://localhost:8090/news').then(function(response){
+              $http.get('/news').then(function(response){
                   $scope.news = response.data;
               }, function(response){
                   console.log(response.data)
@@ -64,7 +69,7 @@
           }
 
           function getWeather(){
-              $http.get('http://localhost:8090/weather').then(function(response){
+              $http.get('/weather').then(function(response){
                   $scope.weather = response.data;
               }, function(response){
                   console.log(response.data)
@@ -92,37 +97,67 @@
 
           function getCalendarEvents(){
 
+                  $http.get('/calendar').then(function(response){
+                  calendarEntry = response.data;
+                  $scope.today = moment();
+                  var dd = $scope.today.date();
 
-              $http.get('/user').then(function(response){
-                  token = response.data.details.tokenValue;
-                  console.log("token is " + token);
+                  $scope.tomorrow = moment().add(1, 'd');
+                  $scope.dayAfter = moment().add(2, 'd');
+                  $scope.threeDaysLater = moment().add(3, 'd');
+                  $scope.fourDaysLater = moment().add(4, 'd');
 
 
-                  var headerValue = "Bearer " + token;
+                  var dayEntries = calendarEntry.dayEntries.length;
 
-                  console.log("headerValue is" + headerValue);
-                  var config = {headers:  {
-                      'Authorization': headerValue
-                  }
-                  };
-                  $http.get('https://www.googleapis.com/calendar/v3/calendars/shamik.nfc@gmail.com/events', config).then(
-                          function(response){
-                              console.log("the calendar data is ");
-                              console.log(response.data);
-                              $scope.calendarItems = response.data;
+                  $scope.day1 = [];
+                  $scope.day2 = [];
+                  $scope.day3 = [];
+                  $scope.day4 = [];
+                  $scope.day5 = [];
+
+                  for(var loop = 0; loop < dayEntries; loop++){
+
+                      var events = calendarEntry.dayEntries[loop].events;
+                      var eventNum = events.length;
+                      //console.log("number of events are " + eventNum + " for day " + calendarEntry.dayEntries[loop].day);
+
+                      for(var eventLoop =0; eventLoop < eventNum; eventLoop++){
+
+                          //console.log(events[eventLoop].startTime + " start with summary " + events[eventLoop].summary)
+
+                          var obj = new Object();
+                          obj.startTime = events[eventLoop].startTime;
+                          obj.summary = events[eventLoop].summary;
+
+
+                          //console.log("today date is " + $scope.today.date() + " and calendar entry is " + calendarEntry.dayEntries[loop].day );
+
+                          if($scope.today.date() == calendarEntry.dayEntries[loop].day)
+                          {
+                              $scope.day1.push(obj);
                           }
-                          , function(response){
+                          if($scope.tomorrow.date() == calendarEntry.dayEntries[loop].day){
+                              $scope.day2.push(obj);
+                          }
+                          if($scope.dayAfter.date() == calendarEntry.dayEntries[loop].day){
+                              $scope.day3.push(obj);
+                          }
+                          if($scope.threeDaysLater.date() == calendarEntry.dayEntries[loop].day){
+                              $scope.day4.push(obj);
+                          }
+                          if($scope.fourDaysLater.date() == calendarEntry.dayEntries[loop].day){
+                              $scope.day5.push(obj);
+                          }
 
 
-                          })
+                          //console.log("eventloop value =" + eventLoop + "day1 is" + $scope.day1[eventLoop].summary);
+                      }
 
 
+                  }
 
-              }, function(response){
-                  console.log(response.data)
-                  $scope.news="something went wrong";
               })
-
 
           }
 
@@ -153,10 +188,48 @@
                 </div>
 
                   <div class="nav-masthead">
-                      <table class="table table-hover">
+                      <table class="table">
                           <tr>
-                              <td ng-repeat="item in calendarItems.items">
-                                  <h3>{{item.summary}}</h3>
+                              <!-- just static table for the next five days -->
+                              <td>
+                                  <h3>{{today.date()}} - {{today.format('ddd')}}</h3>
+                                  <ul>
+                                      <li ng-repeat=" event in day1">
+                                          {{event.startTime}} - {{ event.summary }}
+                                      </li>
+                                  </ul>
+                              </td>
+                              <td>
+                                  <h3>{{tomorrow.date()}} - {{tomorrow.format('ddd')}}</h3>
+                                  <ul>
+                                      <li ng-repeat=" event in day2">
+                                          {{event.startTime}} - {{ event.summary }}
+                                      </li>
+                                  </ul>
+                              </td>
+                              <td>
+                                  <h3>{{dayAfter.date()}} - {{dayAfter.format('ddd')}}</h3>
+                                  <ul>
+                                      <li ng-repeat=" event in day3">
+                                          {{event.startTime}} - {{ event.summary }}
+                                      </li>
+                                  </ul>
+                              </td>
+                              <td>
+                                  <h3>{{threeDaysLater.date()}} - {{threeDaysLater.format('ddd')}}</h3>
+                                  <ul>
+                                      <li ng-repeat=" event in day4">
+                                          {{event.startTime}} - {{ event.summary }}
+                                      </li>
+                                  </ul>
+                              </td>
+                              <td>
+                                  <h3>{{fourDaysLater.date()}} - {{fourDaysLater.format('ddd')}}</h3>
+                                  <ul>
+                                      <li ng-repeat=" event in day5">
+                                          {{event.startTime}} - {{ event.summary }}
+                                      </li>
+                                  </ul>
                               </td>
                           </tr>
                       </table>
@@ -170,6 +243,7 @@
               <div id="news">
                   <h1>{{news.headline}}</h1>
                   <p class="lead">{{news.description}}</p>
+                  <p class="lead">{{news.feedData}}</p>
               </div>
           </div>
 
