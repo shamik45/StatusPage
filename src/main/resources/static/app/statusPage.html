@@ -42,12 +42,26 @@
           getPhotos();
 
 
-
-          $interval(getPhotos,100000);
-          $interval(getNews,100000);
-          $interval(getWeather, 100000);
+          //change news &photos every 3 mins
+          $interval(getPhotos,180000);
+          $interval(getNews,180000);
+          $interval(getWeather, 3600000);
           $interval(getTime,1000);
 
+
+          $scope.getTwoDigitCode = function(code){
+
+              //console.log("got code " + code + "and lenght is " + code.length);
+              var tempCode = code;
+
+              if (code  < 10){
+                  tempCode = "0" + code;
+              }
+
+              //console.log("returning code" + tempCode);
+              return tempCode;
+
+          }
 
           function getPhotos(){
 
@@ -69,12 +83,19 @@
           }
 
           function getWeather(){
-              $http.get('/weather').then(function(response){
+              /*$http.get('/weather').then(function(response){
                   $scope.weather = response.data;
               }, function(response){
                   console.log(response.data)
                   $scope.weather="something went wrong";
+              })*/
+
+              $http.get('/weather2').then(function(response){
+                  $scope.forecastData = response.data;
+                  console.log("got weather data " + $scope.forecastData);
+                  console.log($scope.forecastData);
               })
+
           }
 
           function getTime(){
@@ -249,32 +270,26 @@
 
           <div class="mastfoot">
             <div id="weather" align="left">
-                <table>
+                <table class="table-weather">
                     <tr>
-                        <td rowspan="4">
-                            <img src="{{weather.iconUrl}}" height="150" width="150">
-                        </td>
-                        <td>
-                            <h1>{{weather.title}}</h1>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <p>{{weather.desc}}</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                           <p>{{weather.windData}}</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            {{weather.lastUpdated}}
+                        <td ng-repeat="forecast in forecastData.DailyForecasts" align="center" >
+                            <h4 align="center">{{forecast.Date | date:'MMM-d EEE'}} </h4>
+                            <img align="center" src='https://developer.accuweather.com/sites/default/files/{{getTwoDigitCode(forecast.Day.Icon)}}-s.png' />
+                            <h5 align="center">{{forecast.Day.IconPhrase}}</h5>
+
                         </td>
                     </tr>
 
+                    <tr>
+                        <td ng-repeat="forecast in forecastData.DailyForecasts" align="center">
+                            <!--<h4>{{forecast.Date | date:'MMM-d EEE'}} </h4>-->
+                            <img align="center" src='https://developer.accuweather.com/sites/default/files/{{getTwoDigitCode(forecast.Night.Icon)}}-s.png' />
+                            <h4 align="center">{{forecast.Temperature.Maximum.Value}}{{forecast.Temperature.Maximum.Unit}}   {{forecast.Temperature.Minimum.Value}}{{forecast.Temperature.Maximum.Unit}} </h4>
+                            <h5 align="center">{{forecast.Night.IconPhrase}}</h5>
+                        </td>
+                    </tr>
                 </table>
+
             </div>
           </div>
 

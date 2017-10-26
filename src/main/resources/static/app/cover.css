@@ -62,6 +62,9 @@ body {
     padding: 2rem;
 }
 
+.table-weather{
+    width: 50%;
+ }
 
 /*
  * Header

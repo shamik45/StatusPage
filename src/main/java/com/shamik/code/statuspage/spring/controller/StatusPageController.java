@@ -52,6 +52,15 @@ public class StatusPageController {
     @Value("${photos.url}")
     private String photosUrl;
 
+    @Value("${accuweather.api.key}")
+    private String accuApiKey;
+
+    @Value("${accuweather.location.key}")
+    private String locationKey;
+
+    @Value("${accuweather.url}")
+    private String accuUrl;
+
     @CrossOrigin
     @RequestMapping("/")
     public String index() {
@@ -230,6 +239,27 @@ public class StatusPageController {
 
     }
 
+    @CrossOrigin
+    @RequestMapping("/weather2")
+    public String weatherItem2(){
+
+
+        String url = accuUrl + locationKey + "?apikey=" + accuApiKey;
+
+        String  accuResponse ="";
+        try{
+            accuResponse = sendGet(url,null);
+
+            //logger.debug("accu response is " + accuResponse);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+
+        return accuResponse;
+    }
+
 
     @CrossOrigin
     @RequestMapping("/news")
@@ -368,7 +398,10 @@ public class StatusPageController {
 
         //add request header
         con.setRequestProperty("User-Agent", "StatusBoard v1.0");
-        con.setRequestProperty("Authorization", "Bearer " + token);
+        if(token!=null)
+        {
+            con.setRequestProperty("Authorization", "Bearer " + token);
+        }
 
         int responseCode = con.getResponseCode();
         logger.debug("\nSending 'GET' request to URL : " + url);
