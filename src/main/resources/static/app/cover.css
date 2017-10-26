@@ -37,6 +37,12 @@ body {
     background-size: cover;
 }
 
+.calendar-entry{
+    font-family: "Oswald", Helvetica, Arial, sans-serif!important;
+    font-size: 1.4em;
+    color: red;
+}
+
 /* Extra markup and styles for table-esque vertical and horizontal centering */
 .site-wrapper {
     display: table;

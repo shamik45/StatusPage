@@ -203,8 +203,8 @@
               <div class="inner">
 
                 <div class="masthead-brand">
-                 <h3>{{date| date:'EEE HH:mm:ss'}}</h3>
-                    <h4>{{date| date:'yyyy-MMM-d'}}</h4>
+                 <h1 class="display-2">{{date| date:'EEE HH:mm:ss'}}</h1>
+                    <h1 class="display-4"><small class="text-muted">{{date| date:'yyyy-MMM-d'}}</small></h1>
 
                 </div>
 
@@ -213,42 +213,42 @@
                           <tr>
                               <!-- just static table for the next five days -->
                               <td>
-                                  <h3>{{today.date()}} - {{today.format('ddd')}}</h3>
-                                  <ul>
+                                  <h1 class="display-4">{{today.date()}} - <small class="text-muted">{{today.format('ddd')}}</small></h1>
+                                  <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day1">
-                                          {{event.startTime}} - {{ event.summary }}
+                                          <p class="calendar-entry">{{event.startTime | date: 'H:mm'}} {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
                               <td>
-                                  <h3>{{tomorrow.date()}} - {{tomorrow.format('ddd')}}</h3>
-                                  <ul>
+                                  <h1 class="display-4">{{tomorrow.date()}} - <small class="text-muted">{{tomorrow.format('ddd')}}</small></h1>
+                                  <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day2">
-                                          {{event.startTime}} - {{ event.summary }}
+                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
                               <td>
-                                  <h3>{{dayAfter.date()}} - {{dayAfter.format('ddd')}}</h3>
-                                  <ul>
+                                  <h1 class="display-4">{{dayAfter.date()}} - <small class="text-muted">{{dayAfter.format('ddd')}}</small></h1>
+                                  <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day3">
-                                          {{event.startTime}} - {{ event.summary }}
+                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
                               <td>
-                                  <h3>{{threeDaysLater.date()}} - {{threeDaysLater.format('ddd')}}</h3>
-                                  <ul>
+                                  <h1 class="display-4">{{threeDaysLater.date()}} - <small class="text-muted">{{threeDaysLater.format('ddd')}}</small></h1>
+                                  <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day4">
-                                          {{event.startTime}} - {{ event.summary }}
+                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
                               <td>
-                                  <h3>{{fourDaysLater.date()}} - {{fourDaysLater.format('ddd')}}</h3>
-                                  <ul>
+                                  <h1 class="display-4">{{fourDaysLater.date()}} - <small class="text-muted">{{fourDaysLater.format('ddd')}}</small></h1>
+                                  <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day5">
-                                          {{event.startTime}} - {{ event.summary }}
+                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
@@ -262,7 +262,7 @@
 
           <div class="inner cover">
               <div id="news">
-                  <h1>{{news.headline}}</h1>
+                  <h1 class="display-1">{{news.headline}}</h1>
                   <p class="lead">{{news.description}}</p>
                   <p class="lead">{{news.feedData}}</p>
               </div>
