@@ -27,6 +27,8 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.Principal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -61,6 +63,9 @@ public class StatusPageController {
     @Value("${accuweather.url}")
     private String accuUrl;
 
+    @Value("${calendar.timeMax}")
+    private int timeIntervalForEvents;
+
     @CrossOrigin
     @RequestMapping("/")
     public String index() {
@@ -89,9 +94,16 @@ public class StatusPageController {
         JSONObject returnJson = new JSONObject();
         JSONArray listOfDays = new JSONArray();
 
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+        Calendar c1 = Calendar.getInstance();
+        String timeNow = dateFormat.format(c1.getTime());
+        c1.add(Calendar.DATE, timeIntervalForEvents);
+        String timeLater = dateFormat.format(c1.getTime());
+
+        logger.debug("current time is " + timeNow + " and time 5d later is " + timeLater);
 
         try{
-            String calendarResponse = sendGet(calendarUrl,
+            String calendarResponse = sendGet(calendarUrl + "&timeMax=" + timeLater + "&timeMin=" + timeNow,
                     currentPrincipalToken.getTokenValue());
 
             //logger.debug("the calendar response is " + calendarResponse);
@@ -116,30 +128,46 @@ public class StatusPageController {
 
                 JSONObject itemObject = (JSONObject) itemIterator.next();
                 JSONObject startDateTime = (JSONObject)itemObject.get("start");
-                String startDate = ((String) startDateTime.get("dateTime")).split("T")[0].split("-")[2];
-                //String startTime =  ((String) startDateTime.get("dateTime")).split("T")[1].split("-")[0];
-                //String summary = (String) itemObject.get("summary");
-                //String status = (String) itemObject.get("status");
-
-                ce.setStatus((String) itemObject.get("status"));
-                ce.setSummary((String) itemObject.get("summary"));
-                ce.setStartTime(((String) startDateTime.get("dateTime")).split("T")[1].split("-")[0]);
-
-                logger.debug("start dates are" + startDate);
+                //need to handle full day events
 
 
-                //resultJsonItem.put("day", startDate);
-                //resultJsonItem.put("summary", summary);
-                //resultJsonItem.put("status", status);
+                String startDate = "";
 
-                //resultJson.add(resultJsonItem);
+                if(startDateTime.get("dateTime")!= null)
+                {
 
-                //resultMap.put(startDate,summary);
+                    startDate= ((String) startDateTime.get("dateTime")).split("T")[0].split("-")[2];
+                    ce.setStatus((String) itemObject.get("status"));
+                    ce.setSummary((String) itemObject.get("summary"));
+                    ce.setStartTime(((String) startDateTime.get("dateTime")).split("T")[1].split("-")[0]);
 
-                List<CalendarEntry> list = (List<CalendarEntry>)resultMap.get(startDate);
-                if(list == null){
+                    //logger.debug("start dates are" + startDate);
+
+
+                    //resultJsonItem.put("day", startDate);
+                    //resultJsonItem.put("summary", summary);
+                    //resultJsonItem.put("status", status);
+
+                    //resultJson.add(resultJsonItem);
+
+                    //resultMap.put(startDate,summary);
+
+
+                } else {
+                    startDate= ((String) startDateTime.get("date")).split("-")[2];
+                    ce.setStatus((String) itemObject.get("status"));
+                    ce.setSummary((String) itemObject.get("summary"));
+                    ce.setStartTime("All-Day");
+
+                }
+
+
+
+                List<CalendarEntry> list = (List<CalendarEntry>) resultMap.get(startDate);
+                if (list == null)
+                {
                     list = new ArrayList<CalendarEntry>();
-                    resultMap.put(startDate,list);
+                    resultMap.put(startDate, list);
                 }
                 list.add(ce);
             }
@@ -270,7 +298,7 @@ public class StatusPageController {
         //logger.debug("news url is " + listOfFeedUrls[0]);
         //logger.debug("news url is " + listOfFeedUrls[1]);
 
-        logger.debug("length of array " + listOfFeedUrls.length);
+        //logger.debug("length of array " + listOfFeedUrls.length);
 
         try
         {
