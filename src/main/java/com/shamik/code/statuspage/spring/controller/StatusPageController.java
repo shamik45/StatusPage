@@ -29,6 +29,11 @@ import java.net.URL;
 import java.security.Principal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -65,6 +70,12 @@ public class StatusPageController {
 
     @Value("${calendar.timeMax}")
     private int timeIntervalForEvents;
+
+
+    //used for caching requests to the accuweather service
+    //this is done to ensure that the first request results in a request to the webservice
+    private LocalTime lastWeatherRequest = LocalTime.now().minusMinutes(60);
+    private String lastWeatherData;
 
     @CrossOrigin
     @RequestMapping("/")
@@ -234,7 +245,9 @@ public class StatusPageController {
 
             JSONObject obj = new JSONObject();
 
+
             if (nNode.getNodeType() == Node.ELEMENT_NODE){
+                logger.debug("cache stale - hitting accuweather to get latest data");
                 Element e = (Element) nNode;
 
                 String title = e.getElementsByTagName("temp_f").item(0).getTextContent();
@@ -250,8 +263,6 @@ public class StatusPageController {
                 obj.put("iconUrl", iconUrl);
                 obj.put("windData", windData);
                 obj.put("lastUpdated", lastUpdated);
-
-
 
                 returnData = obj.toJSONString();
 
@@ -275,8 +286,27 @@ public class StatusPageController {
         String url = accuUrl + locationKey + "?apikey=" + accuApiKey;
 
         String  accuResponse ="";
+
+        LocalTime currentTime = LocalTime.now();
+
         try{
-            accuResponse = sendGet(url,null);
+
+            long minutesBetweenRequests = ChronoUnit.MINUTES.between(lastWeatherRequest, currentTime);
+
+            logger.debug("time between requests " + minutesBetweenRequests);
+
+
+            if(minutesBetweenRequests < 45){
+                accuResponse = lastWeatherData;
+                logger.debug("returning cached data for weather");
+            } else {
+                logger.debug("weather cache expired - making request to accuweather");
+                accuResponse = sendGet(url,null);
+                lastWeatherData = accuResponse;
+                lastWeatherRequest = LocalTime.now();
+            }
+
+
 
             //logger.debug("accu response is " + accuResponse);
         }catch (Exception e){
