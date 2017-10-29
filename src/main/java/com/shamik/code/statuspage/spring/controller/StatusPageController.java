@@ -71,10 +71,14 @@ public class StatusPageController {
     @Value("${calendar.timeMax}")
     private int timeIntervalForEvents;
 
+    @Value("${accuweather.cacheInterval}")
+    private int cacheInterval;
+
+
 
     //used for caching requests to the accuweather service
     //this is done to ensure that the first request results in a request to the webservice
-    private LocalTime lastWeatherRequest = LocalTime.now().minusMinutes(60);
+    private LocalTime lastWeatherRequest = LocalTime.now().minusMinutes(cacheInterval + 10);
     private String lastWeatherData;
 
     @CrossOrigin
@@ -296,7 +300,7 @@ public class StatusPageController {
             logger.debug("time between requests " + minutesBetweenRequests);
 
 
-            if(minutesBetweenRequests < 45){
+            if(minutesBetweenRequests < cacheInterval){
                 accuResponse = lastWeatherData;
                 logger.debug("returning cached data for weather");
             } else {
