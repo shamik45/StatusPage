@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.security.Principal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -73,6 +74,9 @@ public class StatusPageController {
 
     @Value("${accuweather.cacheInterval}")
     private int cacheInterval;
+
+    @Value("${photos.people}")
+    private String[] peopleInPhotos;
 
 
 
@@ -407,7 +411,12 @@ public class StatusPageController {
 
 
         try{
-            listOfPhotosXml = sendGet(photosUrl, currentPrincipalToken.getTokenValue());
+
+            String randomPerson = peopleInPhotos[ThreadLocalRandom.current().nextInt(0, peopleInPhotos.length)];
+
+            logger.debug("selecting photos for person " + URLEncoder.encode(randomPerson, "UTF-8"));
+
+            listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), currentPrincipalToken.getTokenValue());
 
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -418,27 +427,15 @@ public class StatusPageController {
 
             NodeList nList = doc.getElementsByTagName("entry");
 
-            //logger.debug("num of entries is " + nList.getLength());
-
-            //for (int temp = 0; temp < nList.getLength(); temp++) {
-
             int randomNum = ThreadLocalRandom.current().nextInt(0, nList.getLength() + 1);
 
                 Node nNode = nList.item(randomNum);
-
-
-
                 if (nNode.getNodeType() == Node.ELEMENT_NODE) {
 
                     Element eElement = (Element) nNode;
-
-                    //logger.debug("Photo title : " + eElement.getElementsByTagName("title").item(0).getTextContent());
                     Element contentElement = (Element)eElement.getElementsByTagName("content").item(0);
-                    //logger.debug("URL:" + contentElement.getAttribute("src"));
                     returnUrl = contentElement.getAttribute("src");
                 }
-
-            //}
 
 
 
@@ -481,6 +478,7 @@ public class StatusPageController {
 
         //print result
         return response.toString();
+
 
     }
 

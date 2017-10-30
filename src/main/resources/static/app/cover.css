@@ -73,7 +73,7 @@ body {
  }
 
 .table-calendar{
-    width: 75%;
+    width: 90%;
 
 }
 
@@ -87,6 +87,7 @@ body {
 
 .masthead-brand {
     margin-bottom: 0;
+    width: 10%;
 }
 
 .nav-masthead .nav-link {
@@ -95,6 +96,7 @@ body {
     color: rgba(255,255,255,.5);
     background-color: transparent;
     border-bottom: .25rem solid transparent;
+
 }
 
 .nav-masthead .nav-link:hover,
@@ -117,6 +119,7 @@ body {
     }
     .nav-masthead {
         float: right;
+        width: 85%;
     }
 }
 

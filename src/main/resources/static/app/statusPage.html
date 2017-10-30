@@ -90,11 +90,11 @@
                   $scope.weather="something went wrong";
               })*/
 
-              $http.get('/weather2').then(function(response){
+              /*$http.get('/weather2').then(function(response){
                   $scope.forecastData = response.data;
                   console.log("got weather data " + $scope.forecastData);
                   console.log($scope.forecastData);
-              })
+              })*/
 
           }
 
@@ -204,7 +204,7 @@
 
                 <div class="masthead-brand">
                  <h1 class="display-2">{{date| date:'EEE HH:mm:ss'}}</h1>
-                    <h1 class="display-4"><small class="text-muted">{{date| date:'yyyy-MMM-d'}}</small></h1>
+                    <h1 class="display-4"><small>{{date| date:'yyyy-MMM-d'}}</small></h1>
 
                 </div>
 
@@ -213,7 +213,7 @@
                           <tr>
                               <!-- just static table for the next five days -->
                               <td>
-                                  <h1 class="display-4">{{today.date()}} - <small class="text-muted">{{today.format('ddd')}}</small></h1>
+                                  <h1 class="display-4">{{today.date()}} - <small>{{today.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day1">
                                           <p class="calendar-entry">{{event.startTime | date: 'H:mm'}} {{ event.summary }}</p>
@@ -221,7 +221,7 @@
                                   </ul>
                               </td>
                               <td>
-                                  <h1 class="display-4">{{tomorrow.date()}} - <small class="text-muted">{{tomorrow.format('ddd')}}</small></h1>
+                                  <h1 class="display-4">{{tomorrow.date()}} - <small>{{tomorrow.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day2">
                                           <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
@@ -229,7 +229,7 @@
                                   </ul>
                               </td>
                               <td>
-                                  <h1 class="display-4">{{dayAfter.date()}} - <small class="text-muted">{{dayAfter.format('ddd')}}</small></h1>
+                                  <h1 class="display-4">{{dayAfter.date()}} - <small>{{dayAfter.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day3">
                                           <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
@@ -237,7 +237,7 @@
                                   </ul>
                               </td>
                               <td>
-                                  <h1 class="display-4">{{threeDaysLater.date()}} - <small class="text-muted">{{threeDaysLater.format('ddd')}}</small></h1>
+                                  <h1 class="display-4">{{threeDaysLater.date()}} - <small>{{threeDaysLater.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day4">
                                           <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
@@ -245,7 +245,7 @@
                                   </ul>
                               </td>
                               <td>
-                                  <h1 class="display-4">{{fourDaysLater.date()}} - <small class="text-muted">{{fourDaysLater.format('ddd')}}</small></h1>
+                                  <h1 class="display-4">{{fourDaysLater.date()}} - <small>{{fourDaysLater.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day5">
                                           <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
