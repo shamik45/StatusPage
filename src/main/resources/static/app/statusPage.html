@@ -90,11 +90,11 @@
                   $scope.weather="something went wrong";
               })*/
 
-              /*$http.get('/weather2').then(function(response){
+              $http.get('/weather2').then(function(response){
                   $scope.forecastData = response.data;
                   console.log("got weather data " + $scope.forecastData);
                   console.log($scope.forecastData);
-              })*/
+              })
 
           }
 
@@ -103,18 +103,6 @@
               //console.log('got time');
           }
 
-          function getBearerToken(){
-              var token = "";
-              $http.get('/user').then(function(response){
-                  token = response.data.details.tokenValue;
-                  console.log("token is " + token);
-              }, function(response){
-                  console.log(response.data)
-                  $scope.news="something went wrong";
-              })
-
-              return token;
-          }
 
           function getCalendarEvents(){
 

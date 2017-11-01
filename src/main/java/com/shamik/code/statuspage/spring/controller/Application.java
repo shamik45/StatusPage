@@ -22,12 +22,13 @@ public class Application extends WebSecurityConfigurerAdapter
         http
                 .antMatcher("/**")
                 .authorizeRequests()
-                .antMatchers("/", "/statusPage**", "/login**", "/webjars/**", "/news**", "/user**",  "/console**", "/app/**")
+                .antMatchers("/", "/statusPage**", "/login**", "/webjars/**", "/news**", "/user**",  "/console**", "/app/**", "/weather**")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
                 .and().logout().logoutSuccessUrl("/").permitAll()
                 .and().csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+
     }
 
     /*@Bean

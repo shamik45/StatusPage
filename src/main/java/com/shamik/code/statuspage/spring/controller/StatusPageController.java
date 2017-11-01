@@ -82,8 +82,12 @@ public class StatusPageController {
 
     //used for caching requests to the accuweather service
     //this is done to ensure that the first request results in a request to the webservice
-    private LocalTime lastWeatherRequest = LocalTime.now().minusMinutes(cacheInterval + 10);
+    private LocalTime lastWeatherRequest;
     private String lastWeatherData;
+
+    private int weatherRequestNum = 0;
+
+    private HashMap<String, String> peoplePhotoLinkContainer = new HashMap<String,String>();
 
     @CrossOrigin
     @RequestMapping("/")
@@ -297,9 +301,19 @@ public class StatusPageController {
 
         LocalTime currentTime = LocalTime.now();
 
+        if(weatherRequestNum < 1){
+            lastWeatherRequest = LocalTime.now().minusMinutes(cacheInterval + 10);
+        }
+
         try{
 
+            logger.debug("cache interval is " + cacheInterval);
+            //logger.debug("cacheIntervalRefreshInitialization is " + cacheIntervalRefreshInitialization);
+            logger.debug("current time =" + currentTime.toString() + " lastrequesttime " + lastWeatherRequest.toString());
             long minutesBetweenRequests = ChronoUnit.MINUTES.between(lastWeatherRequest, currentTime);
+            if(minutesBetweenRequests < 0){
+                minutesBetweenRequests = minutesBetweenRequests * -1;
+            }
 
             logger.debug("time between requests " + minutesBetweenRequests);
 
@@ -307,6 +321,7 @@ public class StatusPageController {
             if(minutesBetweenRequests < cacheInterval){
                 accuResponse = lastWeatherData;
                 logger.debug("returning cached data for weather");
+                logger.debug("returning data " + lastWeatherData);
             } else {
                 logger.debug("weather cache expired - making request to accuweather");
                 accuResponse = sendGet(url,null);
@@ -314,7 +329,7 @@ public class StatusPageController {
                 lastWeatherRequest = LocalTime.now();
             }
 
-
+            weatherRequestNum++;
 
             //logger.debug("accu response is " + accuResponse);
         }catch (Exception e){
@@ -402,9 +417,6 @@ public class StatusPageController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
 
-
-        //logger.debug("current principal name is " + currentPrincipalToken.getTokenValue());
-
         String listOfPhotosXml =  "";
 
         String returnUrl = "";
@@ -412,11 +424,24 @@ public class StatusPageController {
 
         try{
 
+            //build a hashtable to store links so that we don't make expensive http calls all the time
+
             String randomPerson = peopleInPhotos[ThreadLocalRandom.current().nextInt(0, peopleInPhotos.length)];
 
             logger.debug("selecting photos for person " + URLEncoder.encode(randomPerson, "UTF-8"));
 
-            listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), currentPrincipalToken.getTokenValue());
+            if(peoplePhotoLinkContainer.containsKey(randomPerson)){
+
+                listOfPhotosXml = peoplePhotoLinkContainer.get(randomPerson);
+                logger.debug("using cached photo feed to get photos");
+
+            } else {
+
+                listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), currentPrincipalToken.getTokenValue());
+                peoplePhotoLinkContainer.put(randomPerson,listOfPhotosXml);
+                logger.debug("hitting gphotos to get photo feed for " + randomPerson);
+
+            }
 
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
