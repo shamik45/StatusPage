@@ -79,13 +79,20 @@ public class StatusPageController {
     private String[] peopleInPhotos;
 
 
+    @Value("${accuweather.currentConditions.url}")
+    private String currentConditionsUrl;
+
 
     //used for caching requests to the accuweather service
     //this is done to ensure that the first request results in a request to the webservice
     private LocalTime lastWeatherRequest;
+    private LocalTime lastWeatherRequestCC;
     private String lastWeatherData;
+    private String lastWeatherDataCC;
 
     private int weatherRequestNum = 0;
+
+    private int weatherRequestNumCC = 0;
 
     private HashMap<String, String> peoplePhotoLinkContainer = new HashMap<String,String>();
 
@@ -162,7 +169,13 @@ public class StatusPageController {
                     startDate= ((String) startDateTime.get("dateTime")).split("T")[0].split("-")[2];
                     ce.setStatus((String) itemObject.get("status"));
                     ce.setSummary((String) itemObject.get("summary"));
-                    ce.setStartTime(((String) startDateTime.get("dateTime")).split("T")[1].split("-")[0]);
+
+                    String startTime= ((String) startDateTime.get("dateTime")).split("T")[1].split("-")[0];
+                    String[] startTimeToken= startTime.split(":");
+
+                    String formattedStartTime=startTimeToken[0] + ":" + startTimeToken[1];
+
+                    ce.setStartTime(formattedStartTime);
 
                     //logger.debug("start dates are" + startDate);
 
@@ -341,6 +354,56 @@ public class StatusPageController {
         return accuResponse;
     }
 
+    @CrossOrigin
+    @RequestMapping("/weatherCurrent")
+    public String weatherItemCurrent(){
+
+
+        String url = currentConditionsUrl + locationKey + "?apikey=" + accuApiKey;
+
+        String  accuResponse ="";
+
+        LocalTime currentTime = LocalTime.now();
+
+        if(weatherRequestNumCC < 1){
+            lastWeatherRequestCC = LocalTime.now().minusMinutes(cacheInterval + 10);
+        }
+
+        try{
+
+            logger.debug("cache interval is " + cacheInterval);
+            //logger.debug("cacheIntervalRefreshInitialization is " + cacheIntervalRefreshInitialization);
+            logger.debug("current time =" + currentTime.toString() + " lastrequesttime " + lastWeatherRequestCC.toString());
+            long minutesBetweenRequests = ChronoUnit.MINUTES.between(lastWeatherRequestCC, currentTime);
+            if(minutesBetweenRequests < 0){
+                minutesBetweenRequests = minutesBetweenRequests * -1;
+            }
+
+            logger.debug("time between requests " + minutesBetweenRequests);
+
+
+            if(minutesBetweenRequests < cacheInterval){
+                accuResponse = lastWeatherDataCC;
+                logger.debug("returning cached data for weather");
+                logger.debug("returning data " + lastWeatherDataCC);
+            } else {
+                logger.debug("weather cache expired - making request to accuweather");
+                accuResponse = sendGet(url,null);
+                lastWeatherDataCC = accuResponse;
+                lastWeatherRequestCC = LocalTime.now();
+            }
+
+            weatherRequestNumCC++;
+
+            //logger.debug("accu response is " + accuResponse);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+
+        return accuResponse;
+    }
 
     @CrossOrigin
     @RequestMapping("/news")

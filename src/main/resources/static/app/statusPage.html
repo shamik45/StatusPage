@@ -47,6 +47,7 @@
           $interval(getNews,180000);
           $interval(getWeather, 3600000);
           $interval(getTime,1000);
+          $interval(getCalendarEvents,3600000);
 
 
           $scope.getTwoDigitCode = function(code){
@@ -94,6 +95,12 @@
                   $scope.forecastData = response.data;
                   console.log("got weather data " + $scope.forecastData);
                   console.log($scope.forecastData);
+              })
+
+              $http.get('/weatherCurrent').then(function(response){
+                  $scope.forecastDataCC = response.data;
+                  console.log("got weather data " + $scope.forecastDataCC);
+                  console.log($scope.forecastDataCC);
               })
 
           }
@@ -192,7 +199,7 @@
 
                 <div class="masthead-brand">
                  <h1 class="display-2">{{date| date:'EEE HH:mm:ss'}}</h1>
-                    <h1 class="display-4"><small>{{date| date:'yyyy-MMM-d'}}</small></h1>
+                    <h4>{{date| date:'yyyy-MMM-d'}}</h4>
 
                 </div>
 
@@ -212,7 +219,7 @@
                                   <h1 class="display-4">{{tomorrow.date()}} - <small>{{tomorrow.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day2">
-                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
+                                          <p class="calendar-entry">{{event.startTime | date: 'H:mm'}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
@@ -220,7 +227,7 @@
                                   <h1 class="display-4">{{dayAfter.date()}} - <small>{{dayAfter.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day3">
-                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
+                                          <p class="calendar-entry">{{event.startTime | date: 'H:mm'}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
@@ -228,7 +235,7 @@
                                   <h1 class="display-4">{{threeDaysLater.date()}} - <small>{{threeDaysLater.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day4">
-                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
+                                          <p class="calendar-entry">{{event.startTime | date: 'H:mm'}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
@@ -236,7 +243,7 @@
                                   <h1 class="display-4">{{fourDaysLater.date()}} - <small>{{fourDaysLater.format('ddd')}}</small></h1>
                                   <ul style="list-style-type:none">
                                       <li ng-repeat=" event in day5">
-                                          <p class="calendar-entry">{{event.startTime}} - {{ event.summary }}</p>
+                                          <p class="calendar-entry">{{event.startTime | date: 'H:mm'}} - {{ event.summary }}</p>
                                       </li>
                                   </ul>
                               </td>
@@ -252,7 +259,6 @@
               <div id="news">
                   <h1 class="display-1">{{news.headline}}</h1>
                   <p class="lead">{{news.description}}</p>
-                  <p class="lead">{{news.feedData}}</p>
               </div>
           </div>
 
@@ -260,8 +266,13 @@
             <div id="weather" align="left">
                 <table class="table-weather">
                     <tr>
+                        <td rowspan="2" align="center" valign="center">
+                            <img width="200em" height="150em" align="center" src='https://developer.accuweather.com/sites/default/files/{{getTwoDigitCode(forecastDataCC[0].WeatherIcon)}}-s.png' />
+                            <h1 class="display-2">{{forecastDataCC[0].Temperature.Imperial.Value}}F</h1>
+                            <h1 class="text-large-weather-text">{{forecastDataCC[0].WeatherText}}</h1>
+                        </td>
                         <td ng-repeat="forecast in forecastData.DailyForecasts" align="center" >
-                            <h4 align="center">{{forecast.Date | date:'MMM-d EEE'}} </h4>
+                            <h4 align="center">{{forecast.Date | date:'EEE'}} </h4>
                             <img align="center" src='https://developer.accuweather.com/sites/default/files/{{getTwoDigitCode(forecast.Day.Icon)}}-s.png' />
                             <h5 align="center">{{forecast.Day.IconPhrase}}</h5>
 
@@ -270,7 +281,7 @@
 
                     <tr>
                         <td ng-repeat="forecast in forecastData.DailyForecasts" align="center">
-                            <!--<h4>{{forecast.Date | date:'MMM-d EEE'}} </h4>-->
+
                             <img align="center" src='https://developer.accuweather.com/sites/default/files/{{getTwoDigitCode(forecast.Night.Icon)}}-s.png' />
                             <h4 align="center">{{forecast.Temperature.Maximum.Value}}{{forecast.Temperature.Maximum.Unit}}   {{forecast.Temperature.Minimum.Value}}{{forecast.Temperature.Maximum.Unit}} </h4>
                             <h5 align="center">{{forecast.Night.IconPhrase}}</h5>
