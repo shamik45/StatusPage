@@ -89,7 +89,7 @@
               }, function(response){
                   console.log(response.data)
                   $scope.weather="something went wrong";
-              })*/
+              })
 
               $http.get('/weather2').then(function(response){
                   $scope.forecastData = response.data;
@@ -101,7 +101,7 @@
                   $scope.forecastDataCC = response.data;
                   console.log("got weather data " + $scope.forecastDataCC);
                   console.log($scope.forecastDataCC);
-              })
+              })  */
 
           }
 

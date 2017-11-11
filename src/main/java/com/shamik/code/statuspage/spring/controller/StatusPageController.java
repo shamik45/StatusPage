@@ -12,8 +12,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -22,11 +24,13 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -36,6 +40,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalUnit;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.slf4j.Logger;
@@ -78,6 +83,37 @@ public class StatusPageController {
     @Value("${photos.people}")
     private String[] peopleInPhotos;
 
+    @Value("${google.oauth2.client.clientSecret}")
+    private String gClientSecret;
+
+    /*
+
+    google.oauth2.client.clientId=323368230005-fethe5t6253v3i0puv513e1mm6qn3ro8.apps.googleusercontent.com
+google.oauth2.client.clientSecret=x4susVM-B6EfG53pag5Z4Td1
+google.oauth2.client.accessTokenUri=https://www.googleapis.com/oauth2/v3/token
+google.oauth2.client.userAuthorizationUri=https://accounts.google.com/o/oauth2/auth?access_type=offline
+google.oauth2.client.tokenName=oauth_token
+google.oauth2.client.authenticationScheme=query
+google.oauth2.client.clientAuthenticationScheme=form
+#security.oauth2.client.scope=https://picasaweb.google.com/data/
+google.oauth2.client.scope=profile https://www.googleapis.com/auth/drive.photos.readonly https://www.googleapis.com/auth/calendar https://picasaweb.google.com/data/
+google.oauth2.resource.userInfoUri=https://www.googleapis.com/userinfo/v2/me
+google.oauth2.resource.preferTokenInfo=false
+
+     */
+
+
+    @Value("${google.oauth2.client.clientId}")
+    private String gClientId;
+
+    @Value("${google.oauth2.client.redirectURI}")
+    private String gRedirectUri;
+
+    @Value("${google.oauth2.client.scope}")
+    private  String gScope;
+
+    @Value("${google.oauth2.client.access_type}")
+    private  String[] gAccessType;
 
     @Value("${accuweather.currentConditions.url}")
     private String currentConditionsUrl;
@@ -96,6 +132,9 @@ public class StatusPageController {
 
     private HashMap<String, String> peoplePhotoLinkContainer = new HashMap<String,String>();
 
+    private String gRefreshToken;
+    private String gAccessToken;
+
     @CrossOrigin
     @RequestMapping("/")
     public String index() {
@@ -111,11 +150,72 @@ public class StatusPageController {
     }
 
     @CrossOrigin
+    @RequestMapping("/getGoogleToken")
+    public ModelAndView testRedirect(){
+
+       String scopes = "";
+
+
+       String redirUrl = "https://accounts.google.com/o/oauth2/v2/auth?"
+               + "scope=" + gScope
+               + "&access_type=offline"
+               + "&include_granted_scopes=true"
+               + "&state=state_parameter_passthrough_value"
+               + "&redirect_uri=" + gRedirectUri
+               + "&response_type=code"
+               + "&client_id=" + gClientId;
+
+
+        return new ModelAndView("redirect:" + redirUrl);
+    }
+
+    @CrossOrigin
+    @RequestMapping("/processgtoken")
+    private String processGToken(@RequestParam("code") String code){
+
+
+        String tokenResponse = "";
+        /*String refreshToken = "";
+        String accessToken = "";*/
+
+        try
+        {
+            logger.debug("the code returned from google is " + code);
+
+            String postBody = "code=" + code + "&client_id=" + gClientId + "&client_secret=" + gClientSecret + "&redirect_uri="
+                    + gRedirectUri + "&grant_type=authorization_code";
+
+            tokenResponse = sendPost("https://www.googleapis.com/oauth2/v4/token", postBody);
+        } catch (Exception e){
+            logger.debug(e.toString());
+        }
+
+        JSONParser parser = new JSONParser();
+
+        try{
+            JSONObject jsonObj = (JSONObject) parser.parse(tokenResponse);
+
+            gRefreshToken = (String) jsonObj.get("refresh_token");
+            gAccessToken = (String) jsonObj.get("access_token");
+
+
+
+
+
+        } catch (Exception e){
+
+        }
+
+
+        return gRefreshToken + "    " + gAccessToken;
+    }
+
+    @CrossOrigin
     @RequestMapping("/calendar")
     public String getCalendar(){
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
+        //Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        //OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
 
         JSONArray resultJson = new JSONArray();
 
@@ -134,7 +234,7 @@ public class StatusPageController {
 
         try{
             String calendarResponse = sendGet(calendarUrl + "&timeMax=" + timeLater + "&timeMin=" + timeNow,
-                    currentPrincipalToken.getTokenValue());
+                    gAccessToken);
 
             //logger.debug("the calendar response is " + calendarResponse);
 
@@ -477,8 +577,8 @@ public class StatusPageController {
     @RequestMapping("/photos")
     public String getPhotosLink(){
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
+        //Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        //OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
 
         String listOfPhotosXml =  "";
 
@@ -500,10 +600,10 @@ public class StatusPageController {
 
             } else {
 
-                listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), currentPrincipalToken.getTokenValue());
+                //listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), gAccessToken);
+                listOfPhotosXml = sendGet(photosUrl, gAccessToken);
                 peoplePhotoLinkContainer.put(randomPerson,listOfPhotosXml);
                 logger.debug("hitting gphotos to get photo feed for " + randomPerson);
-
             }
 
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -535,6 +635,13 @@ public class StatusPageController {
         return "{ \"photoUrl\" : \"" + returnUrl + "\"}";
     }
 
+    @CrossOrigin
+    @RequestMapping("/authGoogle")
+    private void authenticateWithGoogle(){
+
+
+    }
+
     private String sendGet(String url, String token) throws Exception {
 
         URL obj = new URL(url);
@@ -548,11 +655,13 @@ public class StatusPageController {
         if(token!=null)
         {
             con.setRequestProperty("Authorization", "Bearer " + token);
+            logger.debug("token being sent is " + token);
         }
 
         int responseCode = con.getResponseCode();
         logger.debug("\nSending 'GET' request to URL : " + url);
         logger.debug("Response Code : " + responseCode);
+
 
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(con.getInputStream()));
@@ -570,6 +679,40 @@ public class StatusPageController {
 
     }
 
+
+    private String sendPost(String urlLink, String body) throws Exception{
+
+        String urlParameters  = body;
+        byte[] postData       = urlParameters.getBytes( StandardCharsets.UTF_8 );
+        logger.debug("POST body being sent is " + body);
+        int    postDataLength = postData.length;
+        URL    url            = new URL( urlLink );
+        HttpURLConnection conn= (HttpURLConnection) url.openConnection();
+        conn.setDoOutput( true );
+        conn.setInstanceFollowRedirects( false );
+        conn.setRequestMethod( "POST" );
+        conn.setRequestProperty( "Content-Type", "application/x-www-form-urlencoded");
+        conn.setRequestProperty( "charset", "utf-8");
+        conn.setRequestProperty("Content-Length", Integer.toString(postDataLength));
+        conn.setUseCaches(false);
+        try( DataOutputStream wr = new DataOutputStream( conn.getOutputStream())) {
+            wr.write( postData );
+        }
+
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(conn.getInputStream()));
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+        in.close();
+
+        //print result
+        return response.toString();
+
+    }
 
 
 }
