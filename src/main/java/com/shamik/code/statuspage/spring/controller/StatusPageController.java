@@ -23,10 +23,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -171,7 +168,7 @@ google.oauth2.resource.preferTokenInfo=false
 
     @CrossOrigin
     @RequestMapping("/processgtoken")
-    private String processGToken(@RequestParam("code") String code){
+    private ModelAndView processGToken(@RequestParam("code") String code){
 
 
         String tokenResponse = "";
@@ -207,7 +204,7 @@ google.oauth2.resource.preferTokenInfo=false
         }
 
 
-        return gRefreshToken + "    " + gAccessToken;
+        return new ModelAndView("redirect:/");
     }
 
     @CrossOrigin
@@ -232,7 +229,23 @@ google.oauth2.resource.preferTokenInfo=false
 
         logger.debug("current time is " + timeNow + " and time 5d later is " + timeLater);
 
+        try
+        {
+            String calendarResponse = sendGet(
+                    calendarUrl + "&timeMax=" + timeLater + "&timeMin=" + timeNow,
+                    gAccessToken);
+        } catch (Exception ioe) {
+                 if (ioe instanceof IOException){
+                     if(ioe.getMessage().contains("401")){
+                         refreshAccessToken();
+                     }
+
+                 }
+        }
+
         try{
+
+
             String calendarResponse = sendGet(calendarUrl + "&timeMax=" + timeLater + "&timeMin=" + timeNow,
                     gAccessToken);
 
@@ -585,6 +598,20 @@ google.oauth2.resource.preferTokenInfo=false
         String returnUrl = "";
 
 
+
+        try
+        {
+            listOfPhotosXml = sendGet(photosUrl, gAccessToken);
+        } catch (Exception ioe) {
+            if (ioe instanceof IOException){
+                if(ioe.getMessage().contains("401")){
+                    logger.debug("GAccess token needs to be refreshed - refreshing token");
+                    refreshAccessToken();
+                }
+
+            }
+        }
+
         try{
 
             //build a hashtable to store links so that we don't make expensive http calls all the time
@@ -600,8 +627,8 @@ google.oauth2.resource.preferTokenInfo=false
 
             } else {
 
-                //listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), gAccessToken);
-                listOfPhotosXml = sendGet(photosUrl, gAccessToken);
+                listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), gAccessToken);
+                //listOfPhotosXml = sendGet(photosUrl, gAccessToken);
                 peoplePhotoLinkContainer.put(randomPerson,listOfPhotosXml);
                 logger.debug("hitting gphotos to get photo feed for " + randomPerson);
             }
@@ -635,48 +662,97 @@ google.oauth2.resource.preferTokenInfo=false
         return "{ \"photoUrl\" : \"" + returnUrl + "\"}";
     }
 
-    @CrossOrigin
-    @RequestMapping("/authGoogle")
-    private void authenticateWithGoogle(){
-
-
-    }
 
     private String sendGet(String url, String token) throws Exception {
 
-        URL obj = new URL(url);
-        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-
-        // optional default is GET
-        con.setRequestMethod("GET");
-
-        //add request header
-        con.setRequestProperty("User-Agent", "StatusBoard v1.0");
-        if(token!=null)
-        {
-            con.setRequestProperty("Authorization", "Bearer " + token);
-            logger.debug("token being sent is " + token);
-        }
-
-        int responseCode = con.getResponseCode();
-        logger.debug("\nSending 'GET' request to URL : " + url);
-        logger.debug("Response Code : " + responseCode);
-
-
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        String inputLine;
         StringBuffer response = new StringBuffer();
 
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
+
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+            // optional default is GET
+            con.setRequestMethod("GET");
+
+            //add request header
+            con.setRequestProperty("User-Agent", "StatusBoard v1.0");
+            if (token != null)
+            {
+                con.setRequestProperty("Authorization", "Bearer " + token);
+                logger.debug("token being sent is " + token);
+            }
+
+            int responseCode = con.getResponseCode();
+            logger.debug("\nSending 'GET' request to URL : " + url);
+            logger.debug("Response Code : " + responseCode);
+
+
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream()));
+            String inputLine;
+
+
+            while ((inputLine = in.readLine()) != null)
+            {
+                response.append(inputLine);
+            }
+            in.close();
+
 
         //print result
         return response.toString();
 
 
+    }
+
+    private String refreshAccessToken(){
+
+        StringBuffer response = new StringBuffer();
+        try
+        {
+            String urlParameters =
+                    "client_id=" + gClientId + "&client_secret=" + gClientSecret + "&refresh_token=" + gRefreshToken
+                            + "&grant_type=refresh_token";
+            byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
+            logger.debug("POST body being sent is " + urlParameters);
+            int postDataLength = postData.length;
+            URL url = new URL("https://www.googleapis.com/oauth2/v4/token");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setDoOutput(true);
+            conn.setInstanceFollowRedirects(false);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestProperty("charset", "utf-8");
+            conn.setRequestProperty("Content-Length", Integer.toString(postDataLength));
+            conn.setUseCaches(false);
+            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream()))
+            {
+                wr.write(postData);
+            }
+
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream()));
+            String inputLine;
+
+
+            while ((inputLine = in.readLine()) != null)
+            {
+                response.append(inputLine);
+            }
+            in.close();
+
+            JSONParser parser = new JSONParser();
+            JSONObject responseObject = (JSONObject) parser.parse(response.toString());
+
+            logger.debug("Refreshing token - old access token" + gAccessToken);
+            gAccessToken = (String) responseObject.get("access_token");
+            logger.debug("token refreshed - new access token" + gAccessToken);
+
+        } catch (Exception e){
+            logger.debug("FATAL - Exception in refreshing token - access token not refreshed" );
+        }
+
+        return gAccessToken;
     }
 
 
