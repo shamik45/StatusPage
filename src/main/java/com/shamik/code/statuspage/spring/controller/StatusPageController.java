@@ -8,6 +8,7 @@ import org.mortbay.util.ajax.JSON;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.Scope;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
@@ -44,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
-
+@Scope(value = "session")
 @RestController
 public class StatusPageController {
 
@@ -190,14 +191,14 @@ google.oauth2.resource.preferTokenInfo=false
         JSONParser parser = new JSONParser();
 
         try{
+            logger.debug("token response from google is " + tokenResponse);
+
             JSONObject jsonObj = (JSONObject) parser.parse(tokenResponse);
 
             gRefreshToken = (String) jsonObj.get("refresh_token");
             gAccessToken = (String) jsonObj.get("access_token");
 
-
-
-
+            logger.debug("Setting access and refresh tokens - refreshToken=" + gRefreshToken + " accessToken=" + gAccessToken);
 
         } catch (Exception e){
 
@@ -583,6 +584,13 @@ google.oauth2.resource.preferTokenInfo=false
     @RequestMapping("/user")
     public Principal user(Principal principal) {
         return principal;
+    }
+
+
+    @CrossOrigin
+    @RequestMapping("/tokenStatus")
+    public String getTokens(){
+        return "refresh_token=" + gRefreshToken + " access_token=" + gAccessToken;
     }
 
 
