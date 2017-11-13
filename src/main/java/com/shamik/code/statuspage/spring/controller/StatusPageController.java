@@ -587,12 +587,6 @@ google.oauth2.resource.preferTokenInfo=false
     }
 
 
-    @CrossOrigin
-    @RequestMapping("/tokenStatus")
-    public String getTokens(){
-        return "refresh_token=" + gRefreshToken + " access_token=" + gAccessToken;
-    }
-
 
     @CrossOrigin
     @RequestMapping("/photos")
