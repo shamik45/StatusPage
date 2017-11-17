@@ -1,17 +1,15 @@
 package com.shamik.code.statuspage.spring.controller;
 
 import com.shamik.code.statuspage.spring.controller.objects.CalendarEntry;
+import com.shamik.code.statuspage.spring.controller.objects.UserInfo;
+import com.shamik.code.statuspage.spring.controller.repository.UserInfoRepository;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.mortbay.util.ajax.JSON;
+import org.json.simple.parser.ParseException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.Scope;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,24 +24,21 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.Principal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalTime;
-import java.time.Period;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.Temporal;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import sun.security.pkcs.ParsingException;
 
 @Scope(value = "session")
 @RestController
@@ -84,28 +79,12 @@ public class StatusPageController {
     @Value("${google.oauth2.client.clientSecret}")
     private String gClientSecret;
 
-    /*
-
-    google.oauth2.client.clientId=323368230005-fethe5t6253v3i0puv513e1mm6qn3ro8.apps.googleusercontent.com
-google.oauth2.client.clientSecret=x4susVM-B6EfG53pag5Z4Td1
-google.oauth2.client.accessTokenUri=https://www.googleapis.com/oauth2/v3/token
-google.oauth2.client.userAuthorizationUri=https://accounts.google.com/o/oauth2/auth?access_type=offline
-google.oauth2.client.tokenName=oauth_token
-google.oauth2.client.authenticationScheme=query
-google.oauth2.client.clientAuthenticationScheme=form
-#security.oauth2.client.scope=https://picasaweb.google.com/data/
-google.oauth2.client.scope=profile https://www.googleapis.com/auth/drive.photos.readonly https://www.googleapis.com/auth/calendar https://picasaweb.google.com/data/
-google.oauth2.resource.userInfoUri=https://www.googleapis.com/userinfo/v2/me
-google.oauth2.resource.preferTokenInfo=false
-
-     */
-
-
     @Value("${google.oauth2.client.clientId}")
     private String gClientId;
 
     @Value("${google.oauth2.client.redirectURI}")
     private String gRedirectUri;
+
 
     @Value("${google.oauth2.client.scope}")
     private  String gScope;
@@ -116,6 +95,9 @@ google.oauth2.resource.preferTokenInfo=false
     @Value("${accuweather.currentConditions.url}")
     private String currentConditionsUrl;
 
+
+    @Autowired
+    UserInfoRepository ur;
 
     //used for caching requests to the accuweather service
     //this is done to ensure that the first request results in a request to the webservice
@@ -130,7 +112,7 @@ google.oauth2.resource.preferTokenInfo=false
 
     private HashMap<String, String> peoplePhotoLinkContainer = new HashMap<String,String>();
 
-    private String gRefreshToken;
+    //private String gRefreshToken;
     private String gAccessToken;
 
     @CrossOrigin
@@ -173,6 +155,7 @@ google.oauth2.resource.preferTokenInfo=false
 
 
         String tokenResponse = "";
+        String gRefreshToken = null;
         /*String refreshToken = "";
         String accessToken = "";*/
 
@@ -203,6 +186,61 @@ google.oauth2.resource.preferTokenInfo=false
         } catch (Exception e){
 
         }
+
+        //make a call to get profile info https://www.googleapis.com/oauth2/v1/userinfo?alt=json
+
+        String profileInfo ="";
+
+        //we only write to the db the first time when the refresh token is returned
+
+            JSONObject profileInfoJsonObj = null;
+
+            if (gRefreshToken != null)
+            {
+
+                logger.debug("refresh token not null, writing userinfo to the db");
+
+                try
+                {
+                    profileInfo = sendGet("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", gAccessToken);
+                    logger.debug("the profile info is " + profileInfo);
+
+                    profileInfoJsonObj = (JSONObject) parser.parse(profileInfo);
+
+                    String firstNameFromProfile = (String) profileInfoJsonObj.get("given_name");
+
+                    List<UserInfo> checkNameExistsList = ur.findByFirstName(firstNameFromProfile);
+
+                    if (checkNameExistsList.size() == 0)
+                    {
+                        UserInfo ui = new UserInfo();
+                        ui.setName((String) profileInfoJsonObj.get("name"));
+                        ui.setFirstName((String) profileInfoJsonObj.get("given_name"));
+                        ui.setFamilyName((String) profileInfoJsonObj.get("family_name"));
+                        ui.setLink((String) profileInfoJsonObj.get("link"));
+                        ui.setPictureUrl((String) profileInfoJsonObj.get("picture"));
+                        ui.setGender((String) profileInfoJsonObj.get("gender"));
+                        ui.setRefreshToken(gRefreshToken);
+                        ur.save(ui);
+                    }
+                    else
+                    {
+                        logger.debug("refresh token already exists in the DB - not refreshing");
+                    }
+                }
+                catch (IOException e)
+                {
+                    logger.error("error hitting URL https://www.googleapis.com/oauth2/v1/userinfo?alt=json");
+                }
+                catch (ParseException pe)
+                {
+                    logger.error("error parsing json from URL https://www.googleapis.com/oauth2/v1/userinfo?alt=json");
+                }
+            } else {
+                logger.debug("refresh token already exists - not refreshing DB");
+
+
+            }
 
 
         return new ModelAndView("redirect:/");
@@ -581,14 +619,6 @@ google.oauth2.resource.preferTokenInfo=false
 
 
     @CrossOrigin
-    @RequestMapping("/user")
-    public Principal user(Principal principal) {
-        return principal;
-    }
-
-
-
-    @CrossOrigin
     @RequestMapping("/photos")
     public String getPhotosLink(){
 
@@ -665,7 +695,24 @@ google.oauth2.resource.preferTokenInfo=false
     }
 
 
-    private String sendGet(String url, String token) throws Exception {
+    @CrossOrigin
+    @RequestMapping("/getAllTokens")
+    public String getAllTokens(){
+
+        Iterable<UserInfo> uiList = ur.findAll();
+
+        String returnContents = "";
+
+        uiList.forEach((UserInfo ui) -> {
+                    returnContents.concat(ui.toString());
+                    logger.debug(ui.toString());
+                });
+
+        return returnContents;
+    }
+
+
+    private String sendGet(String url, String token) throws IOException {
 
         StringBuffer response = new StringBuffer();
 
@@ -708,6 +755,14 @@ google.oauth2.resource.preferTokenInfo=false
     }
 
     private String refreshAccessToken(){
+
+        //get the refresh token from the DB
+
+        List<UserInfo> uiList = ur.findByFirstName("Shamik");
+
+        UserInfo ui = (UserInfo)uiList.get(0);
+
+        String gRefreshToken= ui.refreshToken;
 
         StringBuffer response = new StringBuffer();
         try
@@ -756,6 +811,8 @@ google.oauth2.resource.preferTokenInfo=false
 
         return gAccessToken;
     }
+
+
 
 
     private String sendPost(String urlLink, String body) throws Exception{
