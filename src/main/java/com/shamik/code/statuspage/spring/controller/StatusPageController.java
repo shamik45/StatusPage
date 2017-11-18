@@ -1,7 +1,11 @@
 package com.shamik.code.statuspage.spring.controller;
 
 import com.shamik.code.statuspage.spring.controller.objects.CalendarEntry;
+import com.shamik.code.statuspage.spring.controller.objects.CalendarInfo;
+import com.shamik.code.statuspage.spring.controller.objects.PhotoInfo;
 import com.shamik.code.statuspage.spring.controller.objects.UserInfo;
+import com.shamik.code.statuspage.spring.controller.repository.CalendarInfoRepository;
+import com.shamik.code.statuspage.spring.controller.repository.PhotoInfoRepository;
 import com.shamik.code.statuspage.spring.controller.repository.UserInfoRepository;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -52,11 +56,11 @@ public class StatusPageController {
     @Value("${news.feed.url.list}")
     private String[] listOfFeedUrls;
 
-    @Value("${calendar.url}")
-    private String calendarUrl;
+    /*@Value("${calendar.url}")
+    private String calendarUrl;*/
 
-    @Value("${photos.url}")
-    private String photosUrl;
+    //@Value("${photos.url}")
+    //private String photosUrl;
 
     @Value("${accuweather.api.key}")
     private String accuApiKey;
@@ -73,8 +77,8 @@ public class StatusPageController {
     @Value("${accuweather.cacheInterval}")
     private int cacheInterval;
 
-    @Value("${photos.people}")
-    private String[] peopleInPhotos;
+    //@Value("${photos.people}")
+    //private String[] peopleInPhotos;
 
     @Value("${google.oauth2.client.clientSecret}")
     private String gClientSecret;
@@ -96,8 +100,17 @@ public class StatusPageController {
     private String currentConditionsUrl;
 
 
+    String currentUser;
+
     @Autowired
     UserInfoRepository ur;
+
+    @Autowired
+    CalendarInfoRepository cr;
+
+    @Autowired
+    PhotoInfoRepository pr;
+
 
     //used for caching requests to the accuweather service
     //this is done to ensure that the first request results in a request to the webservice
@@ -113,7 +126,7 @@ public class StatusPageController {
     private HashMap<String, String> peoplePhotoLinkContainer = new HashMap<String,String>();
 
     //private String gRefreshToken;
-    private String gAccessToken;
+    //private String gAccessToken;
 
     @CrossOrigin
     @RequestMapping("/")
@@ -150,12 +163,21 @@ public class StatusPageController {
     }
 
     @CrossOrigin
+    @RequestMapping("/setUser")
+    private void setCurrentUser(@RequestParam("user") String user){
+
+        currentUser = user;
+
+    }
+
+    @CrossOrigin
     @RequestMapping("/processgtoken")
     private ModelAndView processGToken(@RequestParam("code") String code){
 
 
         String tokenResponse = "";
         String gRefreshToken = null;
+        String gAccessToken = null;
         /*String refreshToken = "";
         String accessToken = "";*/
 
@@ -250,11 +272,6 @@ public class StatusPageController {
     @RequestMapping("/calendar")
     public String getCalendar(){
 
-        //Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        //OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
-
-        JSONArray resultJson = new JSONArray();
-
         Hashtable resultMap = new Hashtable<String, List<CalendarEntry>>();
 
         JSONObject returnJson = new JSONObject();
@@ -268,25 +285,15 @@ public class StatusPageController {
 
         logger.debug("current time is " + timeNow + " and time 5d later is " + timeLater);
 
-        try
-        {
-            String calendarResponse = sendGet(
-                    calendarUrl + "&timeMax=" + timeLater + "&timeMin=" + timeNow,
-                    gAccessToken);
-        } catch (Exception ioe) {
-                 if (ioe instanceof IOException){
-                     if(ioe.getMessage().contains("401")){
-                         refreshAccessToken();
-                     }
+        List<CalendarInfo> calendarUrlList = cr.findByName(currentUser);
+        String calendarUrl = ((CalendarInfo)calendarUrlList.get(0)).getCalendarUrl();
 
-                 }
-        }
 
         try{
 
 
             String calendarResponse = sendGet(calendarUrl + "&timeMax=" + timeLater + "&timeMin=" + timeNow,
-                    gAccessToken);
+                    obtainAccessToken());
 
             //logger.debug("the calendar response is " + calendarResponse);
 
@@ -620,7 +627,7 @@ public class StatusPageController {
 
     @CrossOrigin
     @RequestMapping("/photos")
-    public String getPhotosLink(){
+    public String getPhotos(){
 
         //Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         //OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
@@ -629,27 +636,29 @@ public class StatusPageController {
 
         String returnUrl = "";
 
+        List<PhotoInfo> photoUrlList = pr.findByName(currentUser);
+        String photoAlbumId = ((PhotoInfo)photoUrlList.get(0)).getAlbumId();
 
+        String photosUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + photoAlbumId + "?imgmax=1600u&fields=entry(content)&max-result=500";
 
-        try
+        String[] peopleInPhotos = null;
+
+        if(((PhotoInfo)photoUrlList.get(0)).getPeopleInPhotos() != null)
         {
-            listOfPhotosXml = sendGet(photosUrl, gAccessToken);
-        } catch (Exception ioe) {
-            if (ioe instanceof IOException){
-                if(ioe.getMessage().contains("401")){
-                    logger.debug("GAccess token needs to be refreshed - refreshing token");
-                    refreshAccessToken();
-                }
-
-            }
+            peopleInPhotos = ((PhotoInfo) photoUrlList.get(0)).getPeopleInPhotos().split(",");
         }
 
+
+
         try{
+            //if there is no "people" to recognize, all the entries are stored under the key random
+            String randomPerson = "random";
+
+            if(peopleInPhotos != null){
+                randomPerson = peopleInPhotos[ThreadLocalRandom.current().nextInt(0, peopleInPhotos.length)];
+            }
 
             //build a hashtable to store links so that we don't make expensive http calls all the time
-
-            String randomPerson = peopleInPhotos[ThreadLocalRandom.current().nextInt(0, peopleInPhotos.length)];
-
             logger.debug("selecting photos for person " + URLEncoder.encode(randomPerson, "UTF-8"));
 
             if(peoplePhotoLinkContainer.containsKey(randomPerson)){
@@ -659,7 +668,18 @@ public class StatusPageController {
 
             } else {
 
-                listOfPhotosXml = sendGet(photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8"), gAccessToken);
+                String urlToHit = "";
+
+                if(randomPerson.equalsIgnoreCase("random")){
+                    urlToHit = photosUrl;
+
+                } else {
+                    urlToHit = photosUrl + "&q=" + URLEncoder.encode(randomPerson, "UTF-8");
+                }
+
+                String token = obtainAccessToken();
+                listOfPhotosXml = sendGet(urlToHit, token);
+                logger.debug("the photos xml response is " + listOfPhotosXml + " and the URL that i hit was " + urlToHit + " token is " + token);
                 //listOfPhotosXml = sendGet(photosUrl, gAccessToken);
                 peoplePhotoLinkContainer.put(randomPerson,listOfPhotosXml);
                 logger.debug("hitting gphotos to get photo feed for " + randomPerson);
@@ -694,22 +714,6 @@ public class StatusPageController {
         return "{ \"photoUrl\" : \"" + returnUrl + "\"}";
     }
 
-
-    @CrossOrigin
-    @RequestMapping("/getAllTokens")
-    public String getAllTokens(){
-
-        Iterable<UserInfo> uiList = ur.findAll();
-
-        String returnContents = "";
-
-        uiList.forEach((UserInfo ui) -> {
-                    returnContents.concat(ui.toString());
-                    logger.debug(ui.toString());
-                });
-
-        return returnContents;
-    }
 
 
     private String sendGet(String url, String token) throws IOException {
@@ -754,15 +758,16 @@ public class StatusPageController {
 
     }
 
-    private String refreshAccessToken(){
+    private String obtainAccessToken(){
 
         //get the refresh token from the DB
 
-        List<UserInfo> uiList = ur.findByFirstName("Shamik");
+        List<UserInfo> uiList = ur.findByFirstName(currentUser);
 
         UserInfo ui = (UserInfo)uiList.get(0);
 
         String gRefreshToken= ui.refreshToken;
+        String gAccessToken = null;
 
         StringBuffer response = new StringBuffer();
         try
@@ -801,7 +806,7 @@ public class StatusPageController {
             JSONParser parser = new JSONParser();
             JSONObject responseObject = (JSONObject) parser.parse(response.toString());
 
-            logger.debug("Refreshing token - old access token" + gAccessToken);
+
             gAccessToken = (String) responseObject.get("access_token");
             logger.debug("token refreshed - new access token" + gAccessToken);
 

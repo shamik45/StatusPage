@@ -87,12 +87,17 @@
             <version>10.14.1.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derbytools</artifactId>
+            <version>10.14.1.0</version>
+        </dependency>
 
     </dependencies>
 
-    <!--<properties>
+    <properties>
         <java.version>1.8</java.version>
-    </properties> -->
+    </properties>
 
 
     <build>
