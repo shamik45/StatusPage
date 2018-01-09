@@ -259,7 +259,7 @@ public class StatusPageController {
                     logger.error("error parsing json from URL https://www.googleapis.com/oauth2/v1/userinfo?alt=json");
                 }
             } else {
-                logger.debug("refresh token already exists - not refreshing DB");
+                logger.debug("ERROR - Response doesn't contain refresh token - need to sign out and sign into the application for user");
 
 
             }
@@ -852,6 +852,51 @@ public class StatusPageController {
         //print result
         return response.toString();
 
+    }
+
+    @CrossOrigin
+    @RequestMapping("/signOut")
+    private String signOutUser(){
+
+        //first obtain an access token for the user
+        if (currentUser == null){
+            return "No user currently signed in - first set user using /setUser?user=<user>";
+        }
+
+        //revoke the token
+        //for this to happen we first need the access token
+        String gAccessToken = obtainAccessToken();
+
+
+        URL obj = null;
+
+        try {
+            obj = new URL("https://accounts.google.com/o/oauth2/revoke?token=" + gAccessToken);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        HttpURLConnection con = null;
+        try {
+            con = (HttpURLConnection) obj.openConnection();
+
+            // optional default is GET
+            con.setRequestMethod("GET");
+
+            //add request header
+            con.setRequestProperty("User-Agent", "StatusBoard v1.0");
+            con.setRequestProperty("Content-type","application/x-www-form-urlencoded");
+
+            int responseCode = con.getResponseCode();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //delete the record from the user_info table
+        ur.deleteByFirstName(currentUser);
+
+        return "User Successfully signed out";
     }
 
 

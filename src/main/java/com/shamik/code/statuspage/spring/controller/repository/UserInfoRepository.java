@@ -3,6 +3,7 @@ package com.shamik.code.statuspage.spring.controller.repository;
 import com.shamik.code.statuspage.spring.controller.objects.UserInfo;
 import org.springframework.data.repository.CrudRepository;
 
+import javax.transaction.Transactional;
 import java.util.List;
 
 /**
@@ -11,4 +12,8 @@ import java.util.List;
 public interface UserInfoRepository extends CrudRepository<UserInfo, Long>
 {
     List<UserInfo> findByFirstName(String firstName);
+
+    @Transactional
+    Long deleteByFirstName(String firstName);
+
 }
