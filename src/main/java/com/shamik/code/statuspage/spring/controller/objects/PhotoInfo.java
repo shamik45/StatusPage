@@ -1,5 +1,7 @@
 package com.shamik.code.statuspage.spring.controller.objects;
 
+import io.swagger.annotations.ApiModelProperty;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -9,6 +11,7 @@ import javax.persistence.Id;
 @Entity
 public class PhotoInfo
 {
+    @ApiModelProperty(notes = "Comma Separated values of search terms to select photos from the album")
     String peopleInPhotos;
 
     public String getPeopleInPhotos()
@@ -41,8 +44,10 @@ public class PhotoInfo
         this.name = name;
     }
 
+    @ApiModelProperty(notes = "The URL of the photo album")
     String albumId;
 
+    @ApiModelProperty(notes = "The first name of the user as listed on their Google Profile")
     @Id
     String name;
 

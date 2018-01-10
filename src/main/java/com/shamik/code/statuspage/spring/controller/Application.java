@@ -22,7 +22,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import javax.servlet.Filter;
 
-@EnableOAuth2Client
+
 @SpringBootApplication
 public class Application extends WebSecurityConfigurerAdapter
 {
@@ -31,8 +31,6 @@ public class Application extends WebSecurityConfigurerAdapter
         SpringApplication.run(Application.class, args);
     }
 
-    @Autowired
-    OAuth2ClientContext oauth2ClientContext;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -52,42 +50,9 @@ public class Application extends WebSecurityConfigurerAdapter
 
         http.authorizeRequests().antMatchers("/").permitAll();
 
+        http.csrf().disable();
 
     }
-
-    private Filter ssoFilter() {
-        OAuth2ClientAuthenticationProcessingFilter googleFilter = new OAuth2ClientAuthenticationProcessingFilter("/login");
-        OAuth2RestTemplate googleTemplate = new OAuth2RestTemplate(googleLogin(), oauth2ClientContext);
-        googleFilter.setRestTemplate(googleTemplate);
-        UserInfoTokenServices tokenServices = new UserInfoTokenServices(googleResource().getUserInfoUri(), googleLogin()
-                .getClientId());
-        tokenServices.setRestTemplate(googleTemplate);
-        googleFilter.setTokenServices(tokenServices);
-
-        return googleFilter;
-    }
-
-    @Bean
-    @ConfigurationProperties("security.oauth2.client")
-    public AuthorizationCodeResourceDetails googleLogin() {
-        return new AuthorizationCodeResourceDetails();
-    }
-
-    @Bean
-    @ConfigurationProperties("security.oauth2.resource.userInfoUri")
-    public ResourceServerProperties googleResource() {
-        return new ResourceServerProperties();
-    }
-
-    @Bean
-    public FilterRegistrationBean oauth2ClientFilterRegistration(
-            OAuth2ClientContextFilter filter) {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(filter);
-        registration.setOrder(-100);
-        return registration;
-    }
-
 
 
     /*@Bean

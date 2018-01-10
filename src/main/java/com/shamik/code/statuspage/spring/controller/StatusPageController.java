@@ -217,8 +217,6 @@ public class StatusPageController {
 
             JSONObject profileInfoJsonObj = null;
 
-            if (gRefreshToken != null)
-            {
 
                 logger.debug("refresh token not null, writing userinfo to the db");
 
@@ -242,13 +240,22 @@ public class StatusPageController {
                         ui.setLink((String) profileInfoJsonObj.get("link"));
                         ui.setPictureUrl((String) profileInfoJsonObj.get("picture"));
                         ui.setGender((String) profileInfoJsonObj.get("gender"));
-                        ui.setRefreshToken(gRefreshToken);
+                        if(gRefreshToken != null) {
+                            ui.setRefreshToken(gRefreshToken);
+                        }
+                        ui.setLastUsedAccessToken(gAccessToken);
                         ur.save(ui);
-                    }
+
+                        //the current user is set and redirected to the status page
+                        }
                     else
                     {
                         logger.debug("refresh token already exists in the DB - not refreshing");
                     }
+
+                    currentUser = (String) profileInfoJsonObj.get("given_name");
+                    return new ModelAndView("redirect:/app/statusPage.html");
+
                 }
                 catch (IOException e)
                 {
@@ -258,14 +265,11 @@ public class StatusPageController {
                 {
                     logger.error("error parsing json from URL https://www.googleapis.com/oauth2/v1/userinfo?alt=json");
                 }
-            } else {
-                logger.debug("ERROR - Response doesn't contain refresh token - need to sign out and sign into the application for user");
 
 
-            }
-
-
+        //in case things go wrong we simply redirect to the root page
         return new ModelAndView("redirect:/");
+
     }
 
     @CrossOrigin
@@ -808,6 +812,8 @@ public class StatusPageController {
 
 
             gAccessToken = (String) responseObject.get("access_token");
+            ui.lastUsedAccessToken = gAccessToken;
+            ur.save(ui);
             logger.debug("token refreshed - new access token" + gAccessToken);
 
         } catch (Exception e){
@@ -865,37 +871,58 @@ public class StatusPageController {
 
         //revoke the token
         //for this to happen we first need the access token
-        String gAccessToken = obtainAccessToken();
+        //String gAccessToken = obtainAccessToken();
+
+        String tokenToUse = "";
+
+        List<UserInfo> uiList = ur.findByFirstName(currentUser);
+        if(uiList.size() > 0) {
 
 
-        URL obj = null;
+            UserInfo ui = (UserInfo) uiList.get(0);
 
-        try {
-            obj = new URL("https://accounts.google.com/o/oauth2/revoke?token=" + gAccessToken);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
+            if (ui.getRefreshToken() != null) {
+                tokenToUse = ui.getRefreshToken();
+                logger.debug("Sign-out - refresh token is " + tokenToUse);
+            } else {
+                tokenToUse = ui.getLastUsedAccessToken();
+                logger.debug("Sign-out - access token is " + tokenToUse);
+            }
+
+
+            URL obj = null;
+
+            try {
+                obj = new URL("https://accounts.google.com/o/oauth2/revoke?token=" + tokenToUse);
+                logger.debug("URL to sign-out https://accounts.google.com/o/oauth2/revoke?token=" + tokenToUse);
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            HttpURLConnection con = null;
+            try {
+                con = (HttpURLConnection) obj.openConnection();
+
+                // optional default is GET
+                con.setRequestMethod("GET");
+
+                //add request header
+                con.setRequestProperty("User-Agent", "StatusBoard v1.0");
+                con.setRequestProperty("Content-type", "application/x-www-form-urlencoded");
+
+                int responseCode = con.getResponseCode();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            //delete the record from the user_info table
+            ur.deleteByFirstName(currentUser);
+        } else {
+
+            logger.error("the user " + currentUser + " is not registered with the App - the user will have to signout");
         }
-
-        HttpURLConnection con = null;
-        try {
-            con = (HttpURLConnection) obj.openConnection();
-
-            // optional default is GET
-            con.setRequestMethod("GET");
-
-            //add request header
-            con.setRequestProperty("User-Agent", "StatusBoard v1.0");
-            con.setRequestProperty("Content-type","application/x-www-form-urlencoded");
-
-            int responseCode = con.getResponseCode();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //delete the record from the user_info table
-        ur.deleteByFirstName(currentUser);
-
         return "User Successfully signed out";
     }
 

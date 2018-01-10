@@ -1,8 +1,13 @@
 package com.shamik.code.statuspage.spring.controller.objects;
 
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 /**
  * Created by shamik.shah on 10/25/17.
  */
+
+
 public class CalendarEntry
 {
     String status;

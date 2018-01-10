@@ -107,6 +107,16 @@ public class UserInfo
 
     public String refreshToken;
 
+    public String getLastUsedAccessToken() {
+        return lastUsedAccessToken;
+    }
+
+    public void setLastUsedAccessToken(String lastUsedAccessToken) {
+        this.lastUsedAccessToken = lastUsedAccessToken;
+    }
+
+    public String lastUsedAccessToken;
+
     public String toString(){
 
         return "Name: " + name
