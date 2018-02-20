@@ -1,10 +1,8 @@
 package com.shamik.code.statuspage.spring.controller;
 
-import com.shamik.code.statuspage.spring.controller.objects.CalendarEntry;
-import com.shamik.code.statuspage.spring.controller.objects.CalendarInfo;
-import com.shamik.code.statuspage.spring.controller.objects.PhotoInfo;
-import com.shamik.code.statuspage.spring.controller.objects.UserInfo;
+import com.shamik.code.statuspage.spring.controller.objects.*;
 import com.shamik.code.statuspage.spring.controller.repository.CalendarInfoRepository;
+import com.shamik.code.statuspage.spring.controller.repository.GoogleAuthInfoRepository;
 import com.shamik.code.statuspage.spring.controller.repository.PhotoInfoRepository;
 import com.shamik.code.statuspage.spring.controller.repository.UserInfoRepository;
 import org.json.simple.JSONArray;
@@ -86,8 +84,8 @@ public class StatusPageController {
     @Value("${google.oauth2.client.clientId}")
     private String gClientId;
 
-    @Value("${google.oauth2.client.redirectURI}")
-    private String gRedirectUri;
+    //@Value("${google.oauth2.client.redirectURI}")
+    //private String gRedirectUri;
 
 
     @Value("${google.oauth2.client.scope}")
@@ -110,6 +108,9 @@ public class StatusPageController {
 
     @Autowired
     PhotoInfoRepository pr;
+
+    @Autowired
+    GoogleAuthInfoRepository gr;
 
 
     //used for caching requests to the accuweather service
@@ -144,17 +145,24 @@ public class StatusPageController {
 
     @CrossOrigin
     @RequestMapping("/getGoogleToken")
-    public ModelAndView testRedirect(){
+    public ModelAndView testRedirect() throws  Exception{
 
        String scopes = "";
 
+        List<GoogleAuthInfo> redirectUrlList = gr.findByName(currentUser);
+
+        if(redirectUrlList.isEmpty() || (redirectUrlList.size() > 1)){
+            throw new Exception("No user set or user query returned multiple values");
+        }
+
+        String redirectUrl = ((GoogleAuthInfo) redirectUrlList.get(0)).getRedirectUri();
 
        String redirUrl = "https://accounts.google.com/o/oauth2/v2/auth?"
                + "scope=" + gScope
                + "&access_type=offline"
                + "&include_granted_scopes=true"
                + "&state=state_parameter_passthrough_value"
-               + "&redirect_uri=" + gRedirectUri
+               + "&redirect_uri=" + redirectUrl
                + "&response_type=code"
                + "&client_id=" + gClientId;
 
@@ -164,15 +172,45 @@ public class StatusPageController {
 
     @CrossOrigin
     @RequestMapping("/setUser")
-    private void setCurrentUser(@RequestParam("user") String user){
+    private String setCurrentUser(@RequestParam("user") String user){
 
         currentUser = user;
+
+        String returnMessages = "";
+
+        List<GoogleAuthInfo> listOfGAInfo = gr.findByName(user);
+
+        if(listOfGAInfo.isEmpty()){
+            returnMessages = returnMessages +  "\nWarning - the current user doesn't have a corresponding Google Auth record";
+        }
+
+        if(listOfGAInfo.size() > 1){
+            returnMessages = returnMessages + "\nWarning - multiple records for the same username";
+        }
+
+        List<UserInfo> uil = ur.findByFirstName(user);
+
+        if(uil.isEmpty()){
+
+            returnMessages = returnMessages +  "\nWarning - the current user doesn't have a corresponding UserInfo record";
+
+        }
+
+        if(uil.size() > 1){
+            returnMessages = returnMessages + "\nWarning - multiple records for the same UserInfo";
+        }
+
+        if(returnMessages.length() == 0){
+            returnMessages = "Successful";
+        }
+
+        return returnMessages;
 
     }
 
     @CrossOrigin
     @RequestMapping("/processgtoken")
-    private ModelAndView processGToken(@RequestParam("code") String code){
+    private ModelAndView processGToken(@RequestParam("code") String code) throws Exception{
 
 
         String tokenResponse = "";
@@ -181,12 +219,22 @@ public class StatusPageController {
         /*String refreshToken = "";
         String accessToken = "";*/
 
+        List<GoogleAuthInfo> redirectUrlList = gr.findByName(currentUser);
+
+        if(redirectUrlList.isEmpty() || (redirectUrlList.size() > 1)){
+            throw new Exception("No user set or user query returned multiple values");
+        }
+
+        String redirectUrl = ((GoogleAuthInfo) redirectUrlList.get(0)).getRedirectUri();
+
+
+
         try
         {
             logger.debug("the code returned from google is " + code);
 
             String postBody = "code=" + code + "&client_id=" + gClientId + "&client_secret=" + gClientSecret + "&redirect_uri="
-                    + gRedirectUri + "&grant_type=authorization_code";
+                    + redirectUrl + "&grant_type=authorization_code";
 
             tokenResponse = sendPost("https://www.googleapis.com/oauth2/v4/token", postBody);
         } catch (Exception e){

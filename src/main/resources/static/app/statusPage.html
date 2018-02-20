@@ -64,12 +64,12 @@
 
           }
 
-          function getPhotos(){
+          function getPhotos() {
 
-              $http.get('/photos').then(function(response){
+              $http.get('/photos').then(function (response) {
                   var url = response.data.photoUrl;
                   //console.log(url);
-                  $scope.bkImageUrl =  url;
+                  $scope.bkImageUrl = url;
                   //console.log($scope.bkImageUrl)
               });
           }
@@ -86,11 +86,11 @@
 
           function getWeather(){
               /*$http.get('/weather').then(function(response){
-                  $scope.weather = response.data;
-              }, function(response){
-                  console.log(response.data)
-                  $scope.weather="something went wrong";
-              })*/
+               $scope.weather = response.data;
+               }, function(response){
+               console.log(response.data)
+               $scope.weather="something went wrong";
+               })*/
 
               $http.get('/weather2').then(function(response){
                   $scope.forecastData = response.data;
@@ -114,7 +114,7 @@
 
           function getCalendarEvents(){
 
-                  $http.get('/calendar').then(function(response){
+              $http.get('/calendar').then(function(response){
                   calendarEntry = response.data;
                   $scope.today = moment();
                   var dd = $scope.today.date();

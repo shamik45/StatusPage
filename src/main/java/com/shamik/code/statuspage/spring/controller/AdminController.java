@@ -1,10 +1,8 @@
 package com.shamik.code.statuspage.spring.controller;
 
-import com.shamik.code.statuspage.spring.controller.objects.CalendarEntry;
-import com.shamik.code.statuspage.spring.controller.objects.CalendarInfo;
-import com.shamik.code.statuspage.spring.controller.objects.PhotoInfo;
-import com.shamik.code.statuspage.spring.controller.objects.UserInfo;
+import com.shamik.code.statuspage.spring.controller.objects.*;
 import com.shamik.code.statuspage.spring.controller.repository.CalendarInfoRepository;
+import com.shamik.code.statuspage.spring.controller.repository.GoogleAuthInfoRepository;
 import com.shamik.code.statuspage.spring.controller.repository.PhotoInfoRepository;
 import com.shamik.code.statuspage.spring.controller.repository.UserInfoRepository;
 
@@ -41,8 +39,45 @@ public class AdminController {
     @Autowired
     PhotoInfoRepository pr;
 
+    @Autowired
+    GoogleAuthInfoRepository gr;
 
-    @ApiOperation(value = "Returns all the Calendars in the system")
+
+
+    @ApiOperation(value = "Adds a google oauth redirect URL for a user")
+    @PostMapping("/googleConfig/addGoogleOauthConfig")
+    public String addRecordToGoogleOAuth(@RequestBody final String body){
+
+        JSONParser parser = new JSONParser();
+        String redirectUrl;
+        String name;
+
+        try {
+
+            JSONObject jsonObj = (JSONObject) parser.parse(body);
+
+            name = (String) jsonObj.get("name");
+            redirectUrl = (String) jsonObj.get("redirectUrl");
+
+            GoogleAuthInfo gai = new GoogleAuthInfo();
+            gai.setName(name);
+            gai.setRedirectUri(redirectUrl);
+
+            gr.save(gai);
+
+        } catch (Exception e){
+            e.printStackTrace();
+            return "error google auth entry";
+        }
+
+        return "Successful";
+
+    }
+
+
+
+
+        @ApiOperation(value = "Returns all the Calendars in the system")
     @GetMapping("/calender/findAllCalendars")
     public List<CalendarInfo> getAllCalendarInfo()
     {

@@ -1,0 +1,31 @@
+version: '3'
+services:
+  web:
+    build:
+          context: .
+          args:
+            - JAR_FILE=target/StatusPage-1.0-SNAPSHOT.jar
+    ports:
+      - 8090:8090
+    networks:
+      - statusfrontend
+    container_name: statuscontainer
+
+  db:
+    image: "datagrip/derby-server:10.12"
+    volumes:
+      - status-data:/var/lib/derby/data
+    container_name: statusderbydb
+    ports:
+      - 1527:1527
+    networks:
+      - statusfrontend
+
+networks:
+  statusfrontend:
+    driver: bridge
+
+volumes:
+  status-data:
+
+
