@@ -36,7 +36,7 @@
           //$scope.bkImageUrl = "https://lh3.googleusercontent.com/-BRbfOdJEQug/We-T933VSMI/AAAAAAAAADg/ijw5EyeLMdASxNWo3U4abrejFNL2IyceACHMYBhgL/file9241312063946.jpg";
           //getPhotos();
           getNews();
-          //getWeather();
+          getWeather();
           getTime();
           getCalendarEvents();
           getPhotos();
@@ -45,9 +45,10 @@
           //change news &photos every 3 mins
           $interval(getPhotos,180000);
           $interval(getNews,180000);
-          //$interval(getWeather, 3600000);
+          $interval(getWeather, 3600000);
           $interval(getTime,1000);
           $interval(getCalendarEvents,3600000);
+          $interval(checkSlateStatus, 30000);
 
 
           $scope.getTwoDigitCode = function(code){
@@ -64,6 +65,19 @@
 
           }
 
+          function checkSlateStatus(){
+
+              $http.get('/getSlateMode').then(function (response) {
+
+                  //console.log("response for slate mode is " + response.data)
+                  if (response.data){
+                      //console.log("slate mode is true -> loading slate");
+                      getPhotos();
+                  }
+
+              });
+          }
+
           function getPhotos() {
 
               $http.get('/photos').then(function (response) {
@@ -78,30 +92,23 @@
               $http.get('/news').then(function(response){
                   $scope.news = response.data;
               }, function(response){
-                  console.log(response.data)
+                  //console.log(response.data)
                   $scope.news="something went wrong";
               })
           }
 
 
           function getWeather(){
-              /*$http.get('/weather').then(function(response){
-               $scope.weather = response.data;
-               }, function(response){
-               console.log(response.data)
-               $scope.weather="something went wrong";
-               })*/
-
               $http.get('/weather2').then(function(response){
                   $scope.forecastData = response.data;
-                  console.log("got weather data " + $scope.forecastData);
-                  console.log($scope.forecastData);
+                  //console.log("got weather data " + $scope.forecastData);
+                  //console.log($scope.forecastData);
               })
 
               $http.get('/weatherCurrent').then(function(response){
                   $scope.forecastDataCC = response.data;
-                  console.log("got weather data " + $scope.forecastDataCC);
-                  console.log($scope.forecastDataCC);
+                  //console.log("got weather data " + $scope.forecastDataCC);
+                  //console.log($scope.forecastDataCC);
               })
 
           }

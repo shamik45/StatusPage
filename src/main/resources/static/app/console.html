@@ -32,40 +32,34 @@
 
             console.log("function ran");
 
-            $http.get("/user").then(function(response){
+            //get the current slateMode
+            $http.get("/getSlateMode").then(
+                    function(response){
+                        console.log("response for slateMode is");
+                        console.log(response.data);
 
-                console.log("response is");
-                console.log(response.data);
-                console.log(response.data.userAuthentication.details.given_name);
-                console.log(response.data.authenticated);
+                        $scope.slateMode = response.data;
+                    }
+            )
 
-                if(response.data)
-                {
-                    $scope.user = response.data.userAuthentication.details.given_name;
-                    $scope.authenticated = response.data.authenticated;
-                    console.log("in true block");
-                } else {
-                    $scope.authenticated = false;
-                    console.log("in false block");
-                }
-            })
 
-            $scope.logout = function(){
-               $http.post("/signOut", {}).then(function(response){
-                   $scope.authenticated = false;
-                   $location.path("/app/console.html");
-               })
-            }
 
             $scope.getAlbums = function(){
-                $http.get("/listMyAlbums?userId=" + $scope.username).then(
+
+                if ($scope.username.length ==0)
+                {
+                    $scope.errorMessage = "Enter the username first";
+                } else {
+                    $scope.errorMessage = "";
+                    $http.get("/listMyAlbums?userId=" + $scope.username).then(
                         function(response){
                             console.log("response is");
                             console.log(response.data);
 
                             $scope.albumsjson = response.data;
                         }
-                )
+                    )
+                }
             }
 
             $scope.getCalendars= function(){
@@ -88,6 +82,10 @@
                             $scope.userjson = response.data;
                         }
                 )
+            }
+
+            $scope.setStatus = function(){
+                $http.get("/slateMode?mode=" + $scope.slateMode)
             }
 
         }]);
@@ -152,13 +150,28 @@
 
     </table>
 
+
+        <label>Current Slate Mode: {{slateMode}} </label>
+
+        <br>
+        <label>
+            <input type="radio" ng-model="slateMode" ng-value="true">
+            On
+        </label>
+        <label>
+            <input type="radio" ng-model="slateMode" ng-value="false">
+            Off
+        </label><br/>
+
+        <button class="btn btn-primary" ng-click="setStatus()">Set Status</button>
+
 <br>
         <label>
             User name:
             <input type="text" name="userName" ng-model="username" required>
         </label>
         <button class="btn btn-primary" ng-click="getAlbums()">List my Albums</button>
-
+        {{errorMessage}}
         <table class="table table-bordered">
             <thead class="thead-dark">
             <tr>
@@ -249,7 +262,7 @@
             </thead>
             <tr ng-repeat="user in userjson.users">
 
-                <td><img src="{{user.pictureUrl}}" height="30" width="48"></td>
+                <td><img src="{{user.pictureUrl}}" height="48" width="30"></td>
                 <td>{{user.firstName}}</td>
                 <td>{{user.profileLink}}</td>
                 <td>{{user.isRefreshTokenPresent}}</td>

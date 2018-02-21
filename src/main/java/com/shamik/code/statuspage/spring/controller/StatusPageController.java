@@ -99,6 +99,8 @@ public class StatusPageController {
     @Value("${accuweather.currentConditions.url}")
     private String currentConditionsUrl;
 
+    private Boolean isSlateMode= false;
+
 
     String currentUser;
 
@@ -623,6 +625,17 @@ public class StatusPageController {
     }
 
 
+    @CrossOrigin
+    @RequestMapping("/slateMode")
+    public void manageSlateMode(@RequestParam("mode") Boolean mode){
+         this.isSlateMode = mode;
+    }
+
+    @CrossOrigin
+    @RequestMapping("/getSlateMode")
+    public Boolean returnSlateMode(){
+        return isSlateMode;
+    }
 
     @CrossOrigin
     @RequestMapping("/photos")
@@ -630,6 +643,12 @@ public class StatusPageController {
 
         //Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         //OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
+
+        if(isSlateMode){
+
+            return "{ \"photoUrl\" : \"/app/slate.jpg\"}";
+            //return "https://photos.app.goo.gl/ojV2t7RLOrsvS5Gx1";
+        }
 
         String listOfPhotosXml =  "";
 
