@@ -49,19 +49,19 @@ public class AdminController {
     public String addRecordToGoogleOAuth(@RequestBody final String body){
 
         JSONParser parser = new JSONParser();
-        String redirectUrl;
-        String name;
+        String value;
+        String parameter;
 
         try {
 
             JSONObject jsonObj = (JSONObject) parser.parse(body);
 
-            name = (String) jsonObj.get("name");
-            redirectUrl = (String) jsonObj.get("redirectUrl");
+            parameter = (String) jsonObj.get("parameter");
+            value = (String) jsonObj.get("value");
 
             GoogleAuthInfo gai = new GoogleAuthInfo();
-            gai.setName(name);
-            gai.setRedirectUri(redirectUrl);
+            gai.setParameter(parameter);
+            gai.setValue(value);
 
             gr.save(gai);
 
@@ -77,7 +77,7 @@ public class AdminController {
 
 
 
-        @ApiOperation(value = "Returns all the Calendars in the system")
+    @ApiOperation(value = "Returns all the Calendars in the system")
     @GetMapping("/calender/findAllCalendars")
     public List<CalendarInfo> getAllCalendarInfo()
     {

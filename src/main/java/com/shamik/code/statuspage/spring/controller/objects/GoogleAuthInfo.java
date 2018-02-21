@@ -13,27 +13,27 @@ import javax.persistence.Id;
 public class GoogleAuthInfo {
 
 
-    String redirectUri;
+    String value;
 
-    public String getRedirectUri() {
-        return redirectUri;
+    public String getValue() {
+        return value;
     }
 
-    public void setRedirectUri(String redirectUri) {
-        this.redirectUri = redirectUri;
+    public void setValue(String value) {
+        this.value = value;
     }
 
-    public String getName() {
-        return name;
+    public String getParameter() {
+        return parameter;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setParameter(String parameter) {
+        this.parameter = parameter;
     }
 
     @ApiModelProperty(notes = "The first name of the user as listed on their Google Profile")
     @Id
-    String name;
+    String parameter;
 
 
 }

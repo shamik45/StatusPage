@@ -11,5 +11,5 @@ import java.util.List;
  */
 public interface GoogleAuthInfoRepository extends CrudRepository<GoogleAuthInfo, Long>{
 
-    List<GoogleAuthInfo> findByName(String name);
+    List<GoogleAuthInfo> findByParameter(String parameter);
 }

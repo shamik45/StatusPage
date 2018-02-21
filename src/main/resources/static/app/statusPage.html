@@ -36,7 +36,7 @@
           //$scope.bkImageUrl = "https://lh3.googleusercontent.com/-BRbfOdJEQug/We-T933VSMI/AAAAAAAAADg/ijw5EyeLMdASxNWo3U4abrejFNL2IyceACHMYBhgL/file9241312063946.jpg";
           //getPhotos();
           getNews();
-          getWeather();
+          //getWeather();
           getTime();
           getCalendarEvents();
           getPhotos();
@@ -45,7 +45,7 @@
           //change news &photos every 3 mins
           $interval(getPhotos,180000);
           $interval(getNews,180000);
-          $interval(getWeather, 3600000);
+          //$interval(getWeather, 3600000);
           $interval(getTime,1000);
           $interval(getCalendarEvents,3600000);
 

@@ -24,6 +24,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -40,7 +41,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
-import sun.security.pkcs.ParsingException;
+import org.xml.sax.SAXException;
+
 
 @Scope(value = "session")
 @RestController
@@ -149,13 +151,13 @@ public class StatusPageController {
 
        String scopes = "";
 
-        List<GoogleAuthInfo> redirectUrlList = gr.findByName(currentUser);
+        List<GoogleAuthInfo> redirectUrlList = gr.findByParameter("redirectUrl");
 
         if(redirectUrlList.isEmpty() || (redirectUrlList.size() > 1)){
             throw new Exception("No user set or user query returned multiple values");
         }
 
-        String redirectUrl = ((GoogleAuthInfo) redirectUrlList.get(0)).getRedirectUri();
+        String redirectUrl = ((GoogleAuthInfo) redirectUrlList.get(0)).getValue();
 
        String redirUrl = "https://accounts.google.com/o/oauth2/v2/auth?"
                + "scope=" + gScope
@@ -178,7 +180,7 @@ public class StatusPageController {
 
         String returnMessages = "";
 
-        List<GoogleAuthInfo> listOfGAInfo = gr.findByName(user);
+        List<GoogleAuthInfo> listOfGAInfo = gr.findByParameter("redirectUrl");
 
         if(listOfGAInfo.isEmpty()){
             returnMessages = returnMessages +  "\nWarning - the current user doesn't have a corresponding Google Auth record";
@@ -219,13 +221,13 @@ public class StatusPageController {
         /*String refreshToken = "";
         String accessToken = "";*/
 
-        List<GoogleAuthInfo> redirectUrlList = gr.findByName(currentUser);
+        List<GoogleAuthInfo> redirectUrlList = gr.findByParameter("redirectUrl");
 
         if(redirectUrlList.isEmpty() || (redirectUrlList.size() > 1)){
             throw new Exception("No user set or user query returned multiple values");
         }
 
-        String redirectUrl = ((GoogleAuthInfo) redirectUrlList.get(0)).getRedirectUri();
+        String redirectUrl = ((GoogleAuthInfo) redirectUrlList.get(0)).getValue();
 
 
 
@@ -457,61 +459,6 @@ public class StatusPageController {
 
         returnJson.put("dayEntries", listOfDays);
         return returnJson.toJSONString();
-    }
-
-
-    @CrossOrigin
-    @RequestMapping("/weather")
-    public String weatherItem(){
-
-        String returnData = "";
-
-        try
-        {
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            //Document doc = dBuilder.parse("http://w1.weather.gov/xml/current_obs/KPAE.xml");
-            Document doc = dBuilder.parse(weatherPollUrl);
-
-            doc.getDocumentElement().normalize();
-
-            NodeList nList = doc.getElementsByTagName("current_observation");
-
-            Node nNode = nList.item(0);
-
-            JSONObject obj = new JSONObject();
-
-
-            if (nNode.getNodeType() == Node.ELEMENT_NODE){
-                logger.debug("cache stale - hitting accuweather to get latest data");
-                Element e = (Element) nNode;
-
-                String title = e.getElementsByTagName("temp_f").item(0).getTextContent();
-                String desc = e.getElementsByTagName("weather").item(0).getTextContent();
-                String iconUrl = e.getElementsByTagName("icon_url_base").item(0).getTextContent() + e.getElementsByTagName("icon_url_name").item(0).getTextContent();
-
-                String windData = e.getElementsByTagName("wind_string").item(0).getTextContent() + " " + e.getElementsByTagName("wind_dir").item(0).getTextContent();
-
-                String lastUpdated = e.getElementsByTagName("observation_time").item(0).getTextContent();
-
-                obj.put("title", title);
-                obj.put("desc", desc);
-                obj.put("iconUrl", iconUrl);
-                obj.put("windData", windData);
-                obj.put("lastUpdated", lastUpdated);
-
-                returnData = obj.toJSONString();
-
-            }
-
-        } catch (Exception ioe){
-            return "there was an exception parsing the feed contents\n" + ioe.toString();
-        }
-
-
-        return returnData;
-
-
     }
 
     @CrossOrigin
@@ -766,6 +713,92 @@ public class StatusPageController {
         return "{ \"photoUrl\" : \"" + returnUrl + "\"}";
     }
 
+
+    @CrossOrigin
+    @RequestMapping("/listMyAlbums")
+    public String getAllAlbums(@RequestParam("userId") String userId) throws ParserConfigurationException {
+
+        String urlToHit = "https://picasaweb.google.com/data/feed/api/user/" + userId + "?fields=entry(title,gphoto:id)&alt=json";
+
+        String token = obtainAccessToken();
+
+        String listOfAlbums = "";
+
+        try {
+            listOfAlbums = sendGet(urlToHit, token);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return listOfAlbums;
+
+    }
+
+
+    @CrossOrigin
+    @RequestMapping("/listUsers")
+    public String currentUserDetails(){
+
+        if(currentUser.length() < 1){
+            return "No user logged in";
+        }
+
+        Iterable<UserInfo> userDetailList = ur.findAll();
+
+        JSONObject obj = new JSONObject();
+
+        JSONArray arrayOfUsers = new JSONArray();
+
+
+        for(UserInfo ui: userDetailList){
+
+            JSONObject uiObject = new JSONObject();
+
+            uiObject.put("firstName", ui.getFirstName());
+            uiObject.put("pictureUrl", ui.getPictureUrl());
+            uiObject.put("profileLink", ui.getLink());
+
+            if(ui.getRefreshToken().isEmpty()){
+                uiObject.put("isRefreshTokenPresent", false);
+            } else {
+                uiObject.put("isRefreshTokenPresent", true);
+            }
+
+            if(ui.getLastUsedAccessToken().isEmpty()){
+                uiObject.put("isAccessTokenPresent", false);
+            } else {
+                uiObject.put("isAccessTokenPresent", true);
+            }
+
+            arrayOfUsers.add(uiObject);
+        }
+
+        obj.put("users", arrayOfUsers);
+
+
+        return obj.toString();
+
+    }
+
+    @CrossOrigin
+    @RequestMapping("/listMyCalendars")
+    public String getAllCalendars() throws ParserConfigurationException {
+
+        String urlToHit = "https://www.googleapis.com/calendar/v3/users/me/calendarList?&alt=json";
+
+        String token = obtainAccessToken();
+
+        String listOfCalendars = "";
+
+        try {
+            listOfCalendars = sendGet(urlToHit, token);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return listOfCalendars;
+
+    }
 
 
     private String sendGet(String url, String token) throws IOException {

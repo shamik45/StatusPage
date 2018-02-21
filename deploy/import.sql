@@ -7,3 +7,6 @@ INSERT INTO PHOTO_INFO(NAME, ALBUM_ID, PEOPLE_IN_PHOTOS) VALUES ('Shamik', '1000
 
 INSERT INTO CALENDAR_INFO(NAME, CALENDAR_URL) VALUES ('2hamik', 'https://www.googleapis.com/calendar/v3/calendars/shamik.nfc@gmail.com/events?orderBy=startTime&singleEvents=true');
 INSERT INTO CALENDAR_INFO(NAME, CALENDAR_URL) VALUES ('Shamik', 'https://www.googleapis.com/calendar/v3/calendars/0h04lenjqb302dao7lhujenmkk@group.calendar.google.com/events?orderBy=startTime&singleEvents=true');
+
+INSERT INTO GOOGLE_AUTH_INFO(PARAMETER, VALUE) VALUES ('redirectUrl','http://localhost:8090/processgtoken');
+
