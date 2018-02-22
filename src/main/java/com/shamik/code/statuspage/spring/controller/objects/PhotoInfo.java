@@ -51,4 +51,24 @@ public class PhotoInfo
     @Id
     String name;
 
+    Boolean slateMode;
+
+    public Boolean getSlateMode() {
+        return slateMode;
+    }
+
+    public void setSlateMode(Boolean slateMode) {
+        this.slateMode = slateMode;
+    }
+
+    public String getSlateLocation() {
+        return slateLocation;
+    }
+
+    public void setSlateLocation(String slateLocation) {
+        this.slateLocation = slateLocation;
+    }
+
+    String slateLocation;
+
 }

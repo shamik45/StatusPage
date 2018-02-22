@@ -247,6 +247,9 @@
                     
                 </th>
                 <th>
+                    Set as current User
+                </th>
+                <th>
                     First Name (Key)
                 </th>
                 <th>
@@ -262,7 +265,8 @@
             </thead>
             <tr ng-repeat="user in userjson.users">
 
-                <td><img src="{{user.pictureUrl}}" height="48" width="30"></td>
+                <td><img src="{{user.pictureUrl}}" height="50" width="50"></td>
+                <td><a href="/setUser?user={{user.firstName}}">Set as current User</a></td>
                 <td>{{user.firstName}}</td>
                 <td>{{user.profileLink}}</td>
                 <td>{{user.isRefreshTokenPresent}}</td>

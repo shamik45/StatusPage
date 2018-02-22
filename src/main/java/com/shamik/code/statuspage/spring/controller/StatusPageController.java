@@ -99,8 +99,6 @@ public class StatusPageController {
     @Value("${accuweather.currentConditions.url}")
     private String currentConditionsUrl;
 
-    private Boolean isSlateMode= false;
-
 
     String currentUser;
 
@@ -626,15 +624,53 @@ public class StatusPageController {
 
 
     @CrossOrigin
+    @RequestMapping("/setUserAndSlateMode")
+    private String setCurrentUser(@RequestParam("user") String user,
+                                  @RequestParam("mode") Boolean mode) {
+
+        List<PhotoInfo> piList = pr.findByName(user);
+
+        PhotoInfo pi = piList.get(0);
+
+        pi.setSlateMode(mode);
+        pr.save(pi);
+
+        return "Success";
+    }
+
+    @CrossOrigin
     @RequestMapping("/slateMode")
-    public void manageSlateMode(@RequestParam("mode") Boolean mode){
-         this.isSlateMode = mode;
+    public String manageSlateMode(@RequestParam("mode") Boolean mode){
+        //this.isSlateMode = mode;
+
+        if(currentUser.isEmpty()){
+            return "Set a current user first";
+        }
+
+        List<PhotoInfo> piList = pr.findByName(currentUser);
+
+        PhotoInfo pi = piList.get(0);
+
+        pi.setSlateMode(mode);
+        pr.save(pi);
+
+        return "Success";
     }
 
     @CrossOrigin
     @RequestMapping("/getSlateMode")
     public Boolean returnSlateMode(){
-        return isSlateMode;
+
+        if(currentUser.isEmpty()){
+            return false;
+        }
+
+        List<PhotoInfo> piList = pr.findByName(currentUser);
+
+        PhotoInfo pi = piList.get(0);
+
+        return pi.getSlateMode();
+
     }
 
     @CrossOrigin
@@ -644,17 +680,28 @@ public class StatusPageController {
         //Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         //OAuth2AuthenticationDetails currentPrincipalToken = (OAuth2AuthenticationDetails)auth.getDetails();
 
-        if(isSlateMode){
-
-            return "{ \"photoUrl\" : \"/app/slate.jpg\"}";
-            //return "https://photos.app.goo.gl/ojV2t7RLOrsvS5Gx1";
+        if(currentUser.isEmpty()){
+            return null;
         }
+
 
         String listOfPhotosXml =  "";
 
         String returnUrl = "";
 
         List<PhotoInfo> photoUrlList = pr.findByName(currentUser);
+
+        if(((PhotoInfo)photoUrlList.get(0)).getSlateMode()){
+
+            JSONObject returnJson = new JSONObject();
+
+            returnJson.put("photoUrl", ((PhotoInfo)photoUrlList.get(0)).getSlateLocation());
+
+            return returnJson.toString();
+
+        }
+
+
         String photoAlbumId = ((PhotoInfo)photoUrlList.get(0)).getAlbumId();
 
         String photosUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + photoAlbumId + "?imgmax=1600u&fields=entry(content)&max-result=500";
@@ -757,10 +804,6 @@ public class StatusPageController {
     @CrossOrigin
     @RequestMapping("/listUsers")
     public String currentUserDetails(){
-
-        if(currentUser.length() < 1){
-            return "No user logged in";
-        }
 
         Iterable<UserInfo> userDetailList = ur.findAll();
 

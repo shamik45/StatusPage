@@ -147,6 +147,8 @@ public class AdminController {
         String peopleInPhotos;
         String albumId;
         String name;
+        Boolean slateMode;
+        String slateLocation;
 
         try {
             logger.debug("token response from swagger is " + body);
@@ -156,11 +158,15 @@ public class AdminController {
             name = (String) jsonObj.get("name");
             peopleInPhotos = (String) jsonObj.get("peopleInPhotos");
             albumId = (String) jsonObj.get("albumId");
+            slateMode = (Boolean) jsonObj.get("slateMode");
+            slateLocation = (String)jsonObj.get("slateLocation");
 
             PhotoInfo pi = new PhotoInfo();
             pi.setName(name);
             pi.setAlbumId(albumId);
             pi.setPeopleInPhotos(peopleInPhotos);
+            pi.setSlateLocation(slateLocation);
+            pi.setSlateMode(slateMode);
 
             pr.save(pi);
 
