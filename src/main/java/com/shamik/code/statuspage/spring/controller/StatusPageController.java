@@ -128,6 +128,7 @@ public class StatusPageController {
 
     private HashMap<String, String> peoplePhotoLinkContainer = new HashMap<String,String>();
 
+    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
     //private String gRefreshToken;
     //private String gAccessToken;
 
@@ -579,7 +580,7 @@ public class StatusPageController {
             //choose a feed at random
             int randomNum = ThreadLocalRandom.current().nextInt(0, listOfFeedUrls.length);
 
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            //DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
             Document doc = dBuilder.parse(listOfFeedUrls[randomNum]);
@@ -750,7 +751,7 @@ public class StatusPageController {
                 logger.debug("hitting gphotos to get photo feed for " + randomPerson);
             }
 
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            //DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             InputSource is = new InputSource(new StringReader(listOfPhotosXml));
             Document doc = dBuilder.parse(is);
@@ -761,15 +762,13 @@ public class StatusPageController {
 
             int randomNum = ThreadLocalRandom.current().nextInt(0, nList.getLength() + 1);
 
-                Node nNode = nList.item(randomNum);
-                if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+            Node nNode = nList.item(randomNum);
+            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
 
-                    Element eElement = (Element) nNode;
-                    Element contentElement = (Element)eElement.getElementsByTagName("content").item(0);
-                    returnUrl = contentElement.getAttribute("src");
-                }
-
-
+                Element eElement = (Element) nNode;
+                Element contentElement = (Element)eElement.getElementsByTagName("content").item(0);
+                returnUrl = contentElement.getAttribute("src");
+            }
 
         }catch(Exception e){
             logger.debug("could not retrieve pictures at this time " + e.toString());
