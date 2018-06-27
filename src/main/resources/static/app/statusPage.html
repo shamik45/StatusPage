@@ -26,7 +26,7 @@
 
   </head>
 
-  <body ng-app="statusPageApp" ng-controller="StatusController" ng-style="{'background-image':'url(' + bkImageUrl+ ')'}">
+  <body ng-app="statusPageApp" ng-controller="StatusController" ng-style="{'background-image':'url(' + bkImageUrl+ ')', 'background-repeat': 'no-repeat', 'background-size': '100%' }">
   <script>
 
       angular.module('statusPageApp',[]).controller('StatusController', ['$scope','$http','$interval',
