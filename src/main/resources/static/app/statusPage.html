@@ -82,6 +82,9 @@
 
               $http.get('/photos').then(function (response) {
                   var url = response.data.photoUrl;
+                  var address = response.data.full_address;
+                  console.log(address);
+                  $scope.address = address;
                   //console.log(url);
                   $scope.bkImageUrl = url;
                   //console.log($scope.bkImageUrl)
@@ -274,6 +277,11 @@
             <div id="weather" align="left">
                 <table class="table-weather">
                     <tr>
+                        <td>
+                            <h3>{{address}}</h3>
+                        </td>
+                    </tr>
+                    <tr>
                         <td rowspan="2" align="center" valign="center">
                             <img width="200em" height="150em" align="center" src='https://developer.accuweather.com/sites/default/files/{{getTwoDigitCode(forecastDataCC[0].WeatherIcon)}}-s.png' />
                             <h1 class="display-2">{{forecastDataCC[0].Temperature.Imperial.Value}}F</h1>
@@ -297,7 +305,10 @@
                     </tr>
                 </table>
 
+
+
             </div>
+
           </div>
 
         </div>

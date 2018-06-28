@@ -705,9 +705,11 @@ public class StatusPageController {
 
         String photoAlbumId = ((PhotoInfo)photoUrlList.get(0)).getAlbumId();
 
-        String photosUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + photoAlbumId + "?imgmax=1600u&fields=entry(content)&max-result=500";
+        String photosUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + photoAlbumId + "?imgmax=1600u&fields=entry(content,georss:where)&max-result=500";
 
         String[] peopleInPhotos = null;
+
+        String address = "";
 
         if(((PhotoInfo)photoUrlList.get(0)).getPeopleInPhotos() != null)
         {
@@ -768,6 +770,11 @@ public class StatusPageController {
                 Element eElement = (Element) nNode;
                 Element contentElement = (Element)eElement.getElementsByTagName("content").item(0);
                 returnUrl = contentElement.getAttribute("src");
+
+                Element locationElement = (Element) eElement.getElementsByTagName("gml:pos").item(0);
+                String location = locationElement.getTextContent();
+                logger.debug("the location of the photo is " + location);
+                address = getGeoLocationFromZip(location);
             }
 
         }catch(Exception e){
@@ -775,7 +782,44 @@ public class StatusPageController {
         }
 
 
-        return "{ \"photoUrl\" : \"" + returnUrl + "\"}";
+        return "{ \"photoUrl\" : \"" + returnUrl + "\" , \"full_address\" : \"" + address + "\"}";
+    }
+
+
+    public String getGeoLocationFromZip(String latlng){
+
+        latlng = latlng.replaceFirst(" ", ",");
+
+        //http://maps.googleapis.com/maps/api/geocode/json?latlng=12.9715987,78.5945626&sensor=false
+
+        String geoCodeUrl = "http://maps.googleapis.com/maps/api/geocode/json?latlng=" + latlng + "&sensor=false";
+
+        String geoResponse = "";
+        String fullAddress = "";
+
+        try {
+            geoResponse = sendGet(geoCodeUrl,null);
+
+            logger.debug("the geo response is " + geoResponse);
+
+
+            JSONParser jp = new JSONParser();
+            JSONObject geoJson = (JSONObject) jp.parse(geoResponse);
+
+            fullAddress = (String)(((JSONObject)(((JSONArray)geoJson.get("results")).get(0)))
+                    .get("formatted_address"));
+
+            logger.debug("the formatted addres is " + fullAddress);
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+
+        return fullAddress;
     }
 
 
